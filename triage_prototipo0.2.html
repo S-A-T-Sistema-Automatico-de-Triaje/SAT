@@ -1,0 +1,945 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriageAI — Prototipo</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; background: #f0f2f5; color: #1f2937; font-size: 14px; }
+
+  header {
+    background: #0d3b6e; color: white; padding: 14px 24px;
+    display: flex; align-items: center; gap: 12px;
+  }
+  header .logo {
+    background: #3b9eff; width: 32px; height: 32px; border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold; font-size: 13px;
+  }
+  header h1 { font-size: 18px; }
+  header span { font-size: 12px; color: #93c5fd; margin-left: 4px; }
+
+  .layout { display: grid; grid-template-columns: 420px 1fr; gap: 16px; padding: 20px 24px; max-width: 1100px; margin: 0 auto; }
+
+  /* ─── FORMULARIO ─── */
+  .form-card { background: white; border-radius: 10px; border: 1px solid #e5e7eb; padding: 20px; }
+  .form-card h2 { font-size: 15px; color: #0d3b6e; margin-bottom: 16px; padding-bottom: 8px; border-bottom: 2px solid #dbeafe; }
+  .section-label { font-size: 11px; font-weight: bold; color: #6b7280; letter-spacing: .06em; text-transform: uppercase; margin: 14px 0 8px; }
+  .field { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; }
+  .field label { font-size: 12px; color: #374151; font-weight: 500; }
+  .field input, .field select, .field textarea {
+    border: 1px solid #d1d5db; border-radius: 6px; padding: 7px 10px;
+    font-size: 13px; font-family: Arial, sans-serif; outline: none;
+    transition: border-color .2s; background: #fff;
+  }
+  .field input:focus, .field select:focus, .field textarea:focus { border-color: #3b9eff; }
+  .field textarea { resize: none; height: 56px; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; }
+
+  .vital-warn  { border-color: #f59e0b !important; background: #fffbeb !important; }
+  .vital-crit  { border-color: #ef4444 !important; background: #fef2f2 !important; }
+
+  .btn-classify {
+    width: 100%; padding: 11px; background: #1565c0; color: white;
+    border: none; border-radius: 7px; font-size: 14px; font-weight: bold;
+    cursor: pointer; margin-top: 14px; transition: background .2s;
+  }
+  .btn-classify:hover { background: #0d3b6e; }
+  .btn-classify:disabled { background: #9ca3af; cursor: not-allowed; }
+  .btn-clear {
+    width: 100%; padding: 8px; background: transparent; color: #6b7280;
+    border: 1px solid #d1d5db; border-radius: 7px; font-size: 13px;
+    cursor: pointer; margin-top: 6px; transition: all .2s;
+  }
+  .btn-clear:hover { border-color: #ef4444; color: #ef4444; }
+
+  /* ─── RESULTADO ─── */
+  .result-col { display: flex; flex-direction: column; gap: 14px; }
+
+  .result-card { background: white; border-radius: 10px; border: 1px solid #e5e7eb; padding: 20px; }
+  .result-card h2 { font-size: 15px; color: #0d3b6e; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid #dbeafe; }
+
+  .placeholder { text-align: center; padding: 40px 20px; color: #9ca3af; }
+  .placeholder .icon { font-size: 36px; margin-bottom: 10px; }
+  .placeholder p { font-size: 13px; }
+
+  /* ESI BADGE */
+  .esi-banner { display: flex; align-items: center; gap: 16px; padding: 16px; border-radius: 8px; margin-bottom: 14px; }
+  .esi-1 { background: #fef2f2; border: 1.5px solid #ef4444; }
+  .esi-2 { background: #fff7ed; border: 1.5px solid #f97316; }
+  .esi-3 { background: #fefce8; border: 1.5px solid #eab308; }
+  .esi-4 { background: #f0fdf4; border: 1.5px solid #22c55e; }
+  .esi-5 { background: #eff6ff; border: 1.5px solid #3b82f6; }
+  .esi-circle {
+    width: 56px; height: 56px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: bold; flex-shrink: 0;
+  }
+  .esi-1 .esi-circle { background: #fecaca; color: #991b1b; }
+  .esi-2 .esi-circle { background: #fed7aa; color: #9a3412; }
+  .esi-3 .esi-circle { background: #fef08a; color: #713f12; }
+  .esi-4 .esi-circle { background: #bbf7d0; color: #166534; }
+  .esi-5 .esi-circle { background: #bfdbfe; color: #1e3a8a; }
+  .esi-text h3 { font-size: 17px; font-weight: bold; }
+  .esi-1 .esi-text h3 { color: #991b1b; }
+  .esi-2 .esi-text h3 { color: #9a3412; }
+  .esi-3 .esi-text h3 { color: #713f12; }
+  .esi-4 .esi-text h3 { color: #166534; }
+  .esi-5 .esi-text h3 { color: #1e3a8a; }
+  .esi-text p { font-size: 12px; color: #6b7280; margin-top: 3px; }
+
+  .result-section { margin-bottom: 14px; }
+  .result-section h4 { font-size: 11px; font-weight: bold; color: #6b7280; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 6px; }
+  .result-section p { font-size: 13px; color: #374151; line-height: 1.6; }
+
+  .flag { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; background: #fef2f2; color: #991b1b; border: 1px solid #fecaca; margin: 2px; }
+  .resource { display: inline-flex; align-items: center; gap: 5px; padding: 3px 10px; border-radius: 20px; font-size: 12px; background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; margin: 2px; }
+  .question-item { display: flex; gap: 8px; padding: 6px 0; border-bottom: 1px solid #f3f4f6; font-size: 13px; color: #374151; }
+  .question-item:last-child { border: none; }
+  .question-num { color: #9ca3af; font-size: 12px; min-width: 18px; }
+
+  /* STREAMING */
+  .streaming-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 14px; font-size: 13px; color: #374151; line-height: 1.7;
+    white-space: pre-wrap; min-height: 80px;
+  }
+  .cursor { display: inline-block; width: 8px; height: 14px; background: #3b9eff; animation: blink .8s infinite; vertical-align: text-bottom; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+  .loading-msg { text-align: center; padding: 20px; color: #6b7280; font-size: 13px; }
+  .loading-dots { display: inline-block; }
+  .loading-dots::after { content: '...'; animation: dots 1.2s infinite steps(4, end); }
+  @keyframes dots { 0%{content:'.'} 33%{content:'..'} 66%{content:'...'} 100%{content:''} }
+
+  /* HISTORIAL */
+  .history-card { background: white; border-radius: 10px; border: 1px solid #e5e7eb; padding: 16px; }
+  .history-card h2 { font-size: 15px; color: #0d3b6e; margin-bottom: 12px; }
+  .history-empty { color: #9ca3af; font-size: 13px; text-align: center; padding: 10px; }
+  .history-item {
+    display: flex; align-items: center; gap: 10px; padding: 8px 10px;
+    border-radius: 7px; border: 1px solid #e5e7eb; margin-bottom: 6px;
+    cursor: pointer; transition: border-color .2s;
+  }
+  .history-item:hover { border-color: #3b9eff; }
+  .h-badge { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: bold; flex-shrink: 0; }
+  .h-1 { background: #fecaca; color: #991b1b; }
+  .h-2 { background: #fed7aa; color: #9a3412; }
+  .h-3 { background: #fef08a; color: #713f12; }
+  .h-4 { background: #bbf7d0; color: #166534; }
+  .h-5 { background: #bfdbfe; color: #1e3a8a; }
+  .h-info { flex: 1; min-width: 0; }
+  .h-name { font-size: 13px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .h-time { font-size: 11px; color: #9ca3af; }
+
+  /* ESTADO OLLAMA */
+  .status-bar { display: flex; align-items: center; gap: 6px; font-size: 12px; color: #6b7280; padding: 6px 24px; background: white; border-bottom: 1px solid #e5e7eb; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot-ok   { background: #22c55e; }
+  .dot-err  { background: #ef4444; }
+  .dot-wait { background: #f59e0b; animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  .error-box { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 14px; color: #991b1b; font-size: 13px; }
+
+  /* ─── MODO TABS ─── */
+  .mode-tabs { display: flex; gap: 0; margin-bottom: 16px; border-radius: 8px; overflow: hidden; border: 1px solid #d1d5db; }
+  .mode-tab {
+    flex: 1; padding: 9px; text-align: center; font-size: 13px; font-weight: 500;
+    cursor: pointer; background: #f9fafb; color: #6b7280; border: none;
+    transition: all .2s; border-right: 1px solid #d1d5db;
+  }
+  .mode-tab:last-child { border-right: none; }
+  .mode-tab.active { background: #1565c0; color: white; }
+  .mode-tab:hover:not(.active) { background: #f0f2f5; color: #374151; }
+
+  /* ─── TEXTO LIBRE ─── */
+  .free-text-area {
+    width: 100%; height: 220px; border: 1px solid #d1d5db; border-radius: 8px;
+    padding: 12px; font-size: 13px; font-family: Arial, sans-serif;
+    line-height: 1.6; resize: vertical; outline: none; transition: border-color .2s;
+    color: #1f2937; background: #fff;
+  }
+  .free-text-area:focus { border-color: #3b9eff; }
+  .free-text-hint { font-size: 11px; color: #9ca3af; margin-top: 6px; line-height: 1.5; }
+  .free-text-examples { margin-top: 12px; }
+  .free-text-examples p { font-size: 11px; font-weight: bold; color: #6b7280; letter-spacing: .05em; text-transform: uppercase; margin-bottom: 6px; }
+  .example-chip {
+    display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px;
+    background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe;
+    cursor: pointer; margin: 2px; transition: all .2s;
+  }
+  .example-chip:hover { background: #dbeafe; }
+
+  /* ─── CONFIRMACIÓN DEL TRIAGISTA ─── */
+  .confirm-panel {
+    margin-top: 14px; padding-top: 14px;
+    border-top: 2px solid #e5e7eb;
+  }
+  .confirm-label { font-size: 11px; font-weight: bold; color: #6b7280; letter-spacing: .06em; text-transform: uppercase; margin-bottom: 8px; }
+  .confirm-btns { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn-confirm {
+    flex: 1; padding: 9px; border: none; border-radius: 7px;
+    font-size: 13px; font-weight: bold; cursor: pointer; transition: all .2s;
+  }
+  .btn-confirm-ok  { background: #dcfce7; color: #166534; border: 1.5px solid #86efac; }
+  .btn-confirm-ok:hover  { background: #bbf7d0; }
+  .btn-confirm-adj { background: #fef9c3; color: #713f12; border: 1.5px solid #fde047; }
+  .btn-confirm-adj:hover { background: #fef08a; }
+  .btn-confirm-ok.selected  { background: #166534; color: white; }
+  .btn-confirm-adj.selected { background: #713f12; color: white; }
+
+  .adjust-panel { display: none; background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-top: 8px; }
+  .adjust-panel.open { display: block; }
+  .esi-selector { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+  .esi-opt {
+    width: 40px; height: 40px; border-radius: 50%; border: 2px solid #d1d5db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: bold; cursor: pointer; transition: all .2s;
+    background: white; color: #6b7280;
+  }
+  .esi-opt:hover { transform: scale(1.1); }
+  .esi-opt.sel-1 { background: #fecaca; border-color: #ef4444; color: #991b1b; }
+  .esi-opt.sel-2 { background: #fed7aa; border-color: #f97316; color: #9a3412; }
+  .esi-opt.sel-3 { background: #fef08a; border-color: #eab308; color: #713f12; }
+  .esi-opt.sel-4 { background: #bbf7d0; border-color: #22c55e; color: #166534; }
+  .esi-opt.sel-5 { background: #bfdbfe; border-color: #3b82f6; color: #1e3a8a; }
+  .adjust-note {
+    width: 100%; border: 1px solid #d1d5db; border-radius: 6px;
+    padding: 7px 10px; font-size: 12px; font-family: Arial, sans-serif;
+    resize: none; height: 52px; outline: none; transition: border-color .2s;
+  }
+  .adjust-note:focus { border-color: #3b9eff; }
+  .btn-save-confirm {
+    width: 100%; padding: 9px; background: #1565c0; color: white;
+    border: none; border-radius: 7px; font-size: 13px; font-weight: bold;
+    cursor: pointer; margin-top: 8px; transition: background .2s;
+  }
+  .btn-save-confirm:hover { background: #0d3b6e; }
+
+  .confirmed-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 500;
+    margin-top: 10px;
+  }
+  .confirmed-ok  { background: #dcfce7; color: #166534; border: 1px solid #86efac; }
+  .confirmed-adj { background: #fef9c3; color: #713f12; border: 1px solid #fde047; }
+
+  /* ─── EXPORTAR ─── */
+  .export-bar {
+    display: none; background: white; border-top: 1px solid #e5e7eb;
+    padding: 10px 24px; position: sticky; bottom: 0;
+    align-items: center; justify-content: space-between; gap: 12px;
+  }
+  .export-bar.visible { display: flex; }
+  .export-info { font-size: 13px; color: #374151; }
+  .export-info span { font-weight: bold; color: #1565c0; }
+  .btn-export {
+    padding: 9px 20px; background: #0d3b6e; color: white;
+    border: none; border-radius: 7px; font-size: 13px; font-weight: bold;
+    cursor: pointer; transition: background .2s; white-space: nowrap;
+  }
+  .btn-export:hover { background: #1565c0; }
+
+  /* ─── HISTORIAL BADGES ─── */
+  .h-status { font-size: 10px; margin-left: auto; flex-shrink: 0; }
+  .hs-ok  { color: #166534; }
+  .hs-adj { color: #713f12; }
+  .hs-pen { color: #9ca3af; }
+
+  @media (max-width: 700px) { .layout { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">T+</div>
+  <h1>TriageAI <span>— Prototipo v1.0</span></h1>
+</header>
+
+<div class="status-bar">
+  <div class="status-dot dot-wait" id="status-dot"></div>
+  <span id="status-text">Verificando conexión con Ollama...</span>
+</div>
+
+<div class="layout">
+
+  <!-- ─── FORMULARIO ─── -->
+  <div class="form-card">
+    <h2>📋 Datos del paciente</h2>
+
+    <!-- SELECTOR DE MODO -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-form" onclick="switchMode('form')">📝 Formulario</button>
+      <button class="mode-tab" id="tab-free" onclick="switchMode('free')">💬 Texto libre</button>
+    </div>
+
+    <!-- MODO FORMULARIO -->
+    <div id="mode-form">
+
+    <div class="section-label">Identificación</div>
+    <div class="grid2">
+      <div class="field">
+        <label>Edad</label>
+        <input type="number" id="edad" placeholder="años" min="0" max="120">
+      </div>
+      <div class="field">
+        <label>Sexo</label>
+        <select id="sexo">
+          <option value="">Seleccionar</option>
+          <option value="masculino">Masculino</option>
+          <option value="femenino">Femenino</option>
+          <option value="otro">Otro</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="section-label">Signos vitales</div>
+    <div class="grid3">
+      <div class="field">
+        <label>FC (bpm)</label>
+        <input type="number" id="fc" placeholder="ej: 80" oninput="checkVitals()">
+      </div>
+      <div class="field">
+        <label>PA sistólica</label>
+        <input type="number" id="pa_s" placeholder="ej: 120" oninput="checkVitals()">
+      </div>
+      <div class="field">
+        <label>PA diastólica</label>
+        <input type="number" id="pa_d" placeholder="ej: 80" oninput="checkVitals()">
+      </div>
+    </div>
+    <div class="grid3">
+      <div class="field">
+        <label>SpO₂ (%)</label>
+        <input type="number" id="spo2" placeholder="ej: 98" oninput="checkVitals()">
+      </div>
+      <div class="field">
+        <label>FR (rpm)</label>
+        <input type="number" id="fr" placeholder="ej: 16">
+      </div>
+      <div class="field">
+        <label>Temp (°C)</label>
+        <input type="number" id="temp" placeholder="ej: 36.5" step="0.1">
+      </div>
+    </div>
+
+    <div class="section-label">Cuadro clínico</div>
+    <div class="field">
+      <label>Motivo de consulta</label>
+      <textarea id="motivo" placeholder="Describa el motivo principal de consulta..."></textarea>
+    </div>
+    <div class="field">
+      <label>Síntomas asociados</label>
+      <textarea id="sintomas" placeholder="Ej: sudoración fría, náuseas, mareo..."></textarea>
+    </div>
+
+    <div class="section-label">Antecedentes</div>
+    <div class="field">
+      <label>Antecedentes médicos relevantes</label>
+      <textarea id="antecedentes" placeholder="Ej: HTA, diabetes, cardiopatía isquémica..."></textarea>
+    </div>
+    <div class="grid2">
+      <div class="field">
+        <label>Medicación actual</label>
+        <input type="text" id="medicacion" placeholder="Ej: metformina, enalapril">
+      </div>
+      <div class="field">
+        <label>Alergias</label>
+        <input type="text" id="alergias" placeholder="Ej: penicilina">
+      </div>
+    </div>
+
+    </div><!-- /mode-form -->
+
+    <!-- MODO TEXTO LIBRE -->
+    <div id="mode-free" style="display:none">
+      <textarea
+        class="free-text-area"
+        id="free-text"
+        placeholder="Describí el caso clínico en texto libre...
+
+Ejemplo:
+Mujer 65 años, dolor torácico opresivo desde hace 2 horas irradiado al brazo izquierdo. FC 115, PA 85/55, SpO2 92%, sudoración fría. Antecedente de infarto hace 2 años, toma aspirina y enalapril."></textarea>
+      <div class="free-text-hint">
+        💡 Podés escribir como si describieras el caso a un colega. El modelo extrae los datos y clasifica automáticamente.
+      </div>
+      <div class="free-text-examples">
+        <p>Ejemplos rápidos</p>
+        <span class="example-chip" onclick="loadExample('pcr')">PCR — ESI 1</span>
+        <span class="example-chip" onclick="loadExample('sca')">Dolor torácico — ESI 2</span>
+        <span class="example-chip" onclick="loadExample('abd')">Dolor abdominal — ESI 3</span>
+        <span class="example-chip" onclick="loadExample('esguince')">Esguince — ESI 4</span>
+        <span class="example-chip" onclick="loadExample('resfriado')">Resfriado — ESI 5</span>
+      </div>
+    </div><!-- /mode-free -->
+
+    <button class="btn-classify" id="btn-classify" onclick="classify()">
+      ⚡ Clasificar con IA
+    </button>
+    <button class="btn-clear" onclick="clearForm()">Limpiar</button>
+  </div>
+
+  <!-- ─── RESULTADO + HISTORIAL ─── -->
+  <div class="result-col">
+
+    <div class="result-card" id="result-card">
+      <h2>🤖 Resultado del triaje</h2>
+      <div class="placeholder" id="placeholder">
+        <div class="icon">🏥</div>
+        <p>Completá los datos del paciente<br>y presioná <strong>Clasificar con IA</strong></p>
+      </div>
+      <div id="result-content" style="display:none"></div>
+    </div>
+
+    <div class="history-card">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <h2 style="margin-bottom:0">🕐 Historial de sesión</h2>
+        <span id="session-count" style="font-size:12px;color:#6b7280">0 casos</span>
+      </div>
+      <div id="history-list"><div class="history-empty">Sin clasificaciones aún</div></div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ─── BARRA DE EXPORTACIÓN ─── -->
+<div class="export-bar" id="export-bar">
+  <div class="export-info">
+    <span id="export-count">0</span> casos clasificados en esta sesión ·
+    <span id="confirmed-count">0</span> confirmados por triagista
+  </div>
+  <button class="btn-export" onclick="exportSession()">⬇ Exportar sesión JSON</button>
+</div>
+
+<script>
+const OLLAMA_URL = "http://localhost:11434";
+const MODEL = "gemma3:4b";
+let history = [];
+let currentResult = null;
+let selectedAdjustESI = null;
+
+const ESI_LABELS = {
+  1: "Resucitación inmediata",
+  2: "Emergente — atención &lt; 15 min",
+  3: "Urgente — atención &lt; 30 min",
+  4: "Semi-urgente — atención &lt; 60 min",
+  5: "No urgente"
+};
+
+const SYSTEM_PROMPT = `Eres un asistente de triaje médico de emergencias. Responde siempre en español.
+ESI 1 = MAYOR urgencia (resucitación inmediata). ESI 5 = MENOR urgencia (no urgente).
+
+RANGOS NORMALES DE REFERENCIA:
+- PA sistólica normal: 100-139 mmHg. SOLO es alarma si PA sistólica < 90 mmHg.
+- FC normal: 60-100 bpm.
+- SpO2 normal: >= 94%.
+- Temperatura normal: 36.0-37.5°C. Fiebre: > 37.5°C.
+
+REGLA CRÍTICA ALTA: si PA sistólica < 90 mmHg O SpO2 < 94% con antecedente cardíaco → clasificar SIEMPRE ESI 1 o 2.
+REGLA CRÍTICA BAJA: signos vitales normales + sin dolor severo + sin dificultad respiratoria → clasificar ESI 4 o 5. NO clasificar más alto aunque los síntomas puedan progresar.
+REGLA MEDIA: fiebre > 37.5°C + dolor localizado moderado + signos vitales estables → ESI 3.
+
+Respondé SOLO en JSON válido con esta estructura exacta:
+{
+  "esi_level": número del 1 al 5,
+  "esi_label": "nombre del nivel",
+  "regla_aplicada": "cuál regla del prompt usaste",
+  "primary_concern": "preocupación clínica principal en una frase",
+  "clinical_reasoning": "justificación clínica en 2-3 oraciones",
+  "red_flags": ["señal 1", "señal 2", "señal 3"],
+  "questions": ["pregunta 1", "pregunta 2", "pregunta 3"],
+  "resources": ["recurso 1", "recurso 2", "recurso 3"]
+}
+No agregues texto antes ni después del JSON.`;
+
+// ─── MODO DE INGRESO ────────────────────────────────────────
+let currentMode = 'form';
+
+function switchMode(mode) {
+  currentMode = mode;
+  document.getElementById('mode-form').style.display = mode === 'form' ? 'block' : 'none';
+  document.getElementById('mode-free').style.display = mode === 'free' ? 'block' : 'none';
+  document.getElementById('tab-form').classList.toggle('active', mode === 'form');
+  document.getElementById('tab-free').classList.toggle('active', mode === 'free');
+}
+
+// ─── EJEMPLOS TEXTO LIBRE ───────────────────────────────────
+const EXAMPLES = {
+  pcr:       "Varón 60 años, inconsciente, sin pulso, sin respiración. Colapsó hace 3 minutos frente a su familia. Antecedente de cardiopatía.",
+  sca:       "Mujer 65 años, dolor torácico opresivo desde hace 2 horas irradiado al brazo izquierdo. FC 115, PA 85/55, SpO2 92%, sudoración fría. Antecedente de infarto hace 2 años, toma aspirina y enalapril.",
+  abd:       "Mujer 45 años, dolor en fosa ilíaca derecha moderado 6/10 desde ayer. Temperatura 38.2°C, FC 92, PA 118/76, SpO2 98%. Náuseas leves. Sin antecedentes relevantes.",
+  esguince:  "Mujer 30 años, esguince de tobillo derecho tras caída hace 1 hora. Puede apoyar levemente, sin deformidad visible. FC 78, PA 118/75, SpO2 99%, temperatura 36.6°C.",
+  resfriado: "Hombre 28 años, resfriado común hace 2 días. Temperatura 37.3°C, congestión nasal, malestar leve. Sin dificultad para respirar. FC 72, PA 118/76, SpO2 99%."
+};
+
+function loadExample(key) {
+  document.getElementById('free-text').value = EXAMPLES[key] || '';
+  document.getElementById('free-text').focus();
+}
+
+// ─── VERIFICAR OLLAMA ───────────────────────────────────────
+async function checkOllama() {
+  try {
+    const r = await fetch(`${OLLAMA_URL}/api/tags`, { signal: AbortSignal.timeout(3000) });
+    if (r.ok) {
+      const data = await r.json();
+      const hasModel = data.models?.some(m => m.name.includes("gemma3"));
+      if (hasModel) {
+        setStatus("ok", `Ollama activo · Modelo: ${MODEL}`);
+      } else {
+        setStatus("warn", `Ollama activo pero ${MODEL} no encontrado — ejecutá: ollama pull gemma3:4b`);
+      }
+    } else {
+      setStatus("err", "Ollama no responde — verificá que esté corriendo con: ollama serve");
+    }
+  } catch {
+    setStatus("err", "No se puede conectar a Ollama — ejecutá: ollama serve");
+  }
+}
+
+function setStatus(type, msg) {
+  const dot = document.getElementById("status-dot");
+  const txt = document.getElementById("status-text");
+  dot.className = `status-dot dot-${type}`;
+  txt.textContent = msg;
+}
+
+// ─── VALIDAR VITALES ────────────────────────────────────────
+function checkVitals() {
+  const fc   = +document.getElementById("fc").value;
+  const pas  = +document.getElementById("pa_s").value;
+  const spo2 = +document.getElementById("spo2").value;
+
+  const fcEl   = document.getElementById("fc");
+  const pasEl  = document.getElementById("pa_s");
+  const spo2El = document.getElementById("spo2");
+
+  fcEl.className   = fc > 0 ? (fc > 150 || fc < 40 ? "vital-crit" : fc > 100 || fc < 50 ? "vital-warn" : "") : "";
+  pasEl.className  = pas > 0 ? (pas < 90 ? "vital-crit" : pas < 100 ? "vital-warn" : "") : "";
+  spo2El.className = spo2 > 0 ? (spo2 < 90 ? "vital-crit" : spo2 < 94 ? "vital-warn" : "") : "";
+}
+
+// ─── ARMAR PROMPT ───────────────────────────────────────────
+function buildPrompt() {
+  // MODO TEXTO LIBRE
+  if (currentMode === 'free') {
+    const text = document.getElementById("free-text").value.trim();
+    if (!text) return null;
+    return `CASO CLÍNICO:\n${text}`;
+  }
+
+  // MODO FORMULARIO
+  const get = id => document.getElementById(id).value.trim();
+  const edad  = get("edad");
+  const sexo  = get("sexo");
+  const fc    = get("fc");
+  const pas   = get("pa_s");
+  const pad   = get("pa_d");
+  const spo2  = get("spo2");
+  const fr    = get("fr");
+  const temp  = get("temp");
+  const motivo = get("motivo");
+  const sint  = get("sintomas");
+  const ant   = get("antecedentes");
+  const med   = get("medicacion");
+  const aler  = get("alergias");
+
+  if (!motivo) return null;
+
+  let prompt = `CASO CLÍNICO:\n`;
+  if (edad || sexo) prompt += `Paciente: ${sexo || "sin especificar"}, ${edad ? edad + " años" : "edad no indicada"}\n`;
+
+  let vitales = [];
+  if (fc)   vitales.push(`FC=${fc} bpm`);
+  if (pas && pad) vitales.push(`PA=${pas}/${pad} mmHg`);
+  else if (pas)   vitales.push(`PA sistólica=${pas} mmHg`);
+  if (spo2) vitales.push(`SpO₂=${spo2}%`);
+  if (fr)   vitales.push(`FR=${fr} rpm`);
+  if (temp) vitales.push(`Temperatura=${temp}°C`);
+  if (vitales.length) prompt += `Signos vitales: ${vitales.join(", ")}\n`;
+
+  prompt += `Motivo de consulta: ${motivo}\n`;
+  if (sint)  prompt += `Síntomas asociados: ${sint}\n`;
+  if (ant)   prompt += `Antecedentes: ${ant}\n`;
+  if (med)   prompt += `Medicación: ${med}\n`;
+  if (aler)  prompt += `Alergias: ${aler}\n`;
+
+  return prompt;
+}
+
+// ─── OBTENER TEXTO PARA HISTORIAL ───────────────────────────
+function getHistoryLabel() {
+  if (currentMode === 'free') {
+    return document.getElementById("free-text").value.trim().substring(0, 40);
+  }
+  return document.getElementById("motivo").value.trim().substring(0, 40);
+}
+
+// ─── CLASIFICAR ─────────────────────────────────────────────
+async function classify() {
+  const prompt = buildPrompt();
+  if (!prompt) {
+    if (currentMode === 'free') {
+      alert("Escribí el caso clínico en el área de texto.");
+    } else {
+      alert("Completá al menos el motivo de consulta.");
+    }
+    return;
+  }
+
+  const btn = document.getElementById("btn-classify");
+  btn.disabled = true;
+  btn.textContent = "Clasificando...";
+  setStatus("wait", "Enviando al modelo...");
+
+  document.getElementById("placeholder").style.display = "none";
+  const content = document.getElementById("result-content");
+  content.style.display = "block";
+  content.innerHTML = `<div class="loading-msg">Analizando caso clínico<span class="loading-dots"></span></div>`;
+
+  try {
+    const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: MODEL,
+        stream: true,
+        options: { temperature: 0.1 },
+        messages: [
+          { role: "system", content: SYSTEM_PROMPT },
+          { role: "user",   content: prompt }
+        ]
+      })
+    });
+
+    if (!response.ok) throw new Error("Error en la API de Ollama");
+
+    // ── STREAMING ──────────────────────────────────────────
+    content.innerHTML = `<div class="streaming-box" id="stream-box"></div>`;
+    const streamBox = document.getElementById("stream-box");
+    const reader = response.body.getReader();
+    const decoder = new TextDecoder();
+    let fullText = "";
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      const lines = decoder.decode(value).split("\n").filter(Boolean);
+      for (const line of lines) {
+        try {
+          const obj = JSON.parse(line);
+          if (obj.message?.content) {
+            fullText += obj.message.content;
+            streamBox.innerHTML = escapeHtml(fullText) + '<span class="cursor"></span>';
+          }
+        } catch {}
+      }
+    }
+
+    // ── PARSEAR JSON ───────────────────────────────────────
+    let result;
+    try {
+      const cleaned = fullText.replace(/```json|```/g, "").trim();
+      const jsonMatch = cleaned.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) throw new Error("No JSON found");
+      result = JSON.parse(jsonMatch[0]);
+    } catch {
+      content.innerHTML = `
+        <div class="error-box">
+          <strong>El modelo no devolvió JSON válido.</strong><br>
+          Respuesta recibida:<br><br>
+          <div style="font-family:monospace;font-size:12px;white-space:pre-wrap">${escapeHtml(fullText)}</div>
+        </div>`;
+      btn.disabled = false;
+      btn.textContent = "⚡ Clasificar con IA";
+      setStatus("warn", "Respuesta recibida pero no en formato JSON esperado");
+      return;
+    }
+
+    // ── MOSTRAR RESULTADO ──────────────────────────────────
+    currentResult = { result, label: getHistoryLabel(), time: new Date().toLocaleTimeString("es-AR"), prompt };
+    renderResult(result, content, true);
+    addHistory(result, getHistoryLabel());
+    setStatus("ok", `Clasificación completada · ${MODEL}`);
+
+  } catch (err) {
+    content.innerHTML = `<div class="error-box"><strong>Error de conexión:</strong> ${err.message}<br><br>Verificá que Ollama esté corriendo con: <code>ollama serve</code></div>`;
+    setStatus("err", "Error — no se pudo conectar con Ollama");
+  }
+
+  btn.disabled = false;
+  btn.textContent = "⚡ Clasificar con IA";
+}
+
+// ─── RENDERIZAR RESULTADO ───────────────────────────────────
+function renderResult(r, container, showConfirm = false) {
+  const esi = r.esi_level || 1;
+  const flags = Array.isArray(r.red_flags) ? r.red_flags : [];
+  const questions = Array.isArray(r.questions) ? r.questions : [];
+  const resources = Array.isArray(r.resources) ? r.resources : [];
+
+  const confirmHTML = showConfirm ? `
+    <div class="confirm-panel" id="confirm-panel">
+      <div class="confirm-label">✅ Decisión del triagista</div>
+      <div class="confirm-btns">
+        <button class="btn-confirm btn-confirm-ok" id="btn-ok" onclick="confirmESI('ok')">
+          ✓ Confirmar ESI ${esi}
+        </button>
+        <button class="btn-confirm btn-confirm-adj" id="btn-adj" onclick="confirmESI('adjust')">
+          ✎ Ajustar nivel
+        </button>
+      </div>
+      <div class="adjust-panel" id="adjust-panel">
+        <div style="font-size:12px;color:#374151;margin-bottom:8px;font-weight:500">Seleccioná el nivel correcto:</div>
+        <div class="esi-selector">
+          ${[1,2,3,4,5].map(n => `<div class="esi-opt" id="esi-opt-${n}" onclick="selectAdjustESI(${n})">${n}</div>`).join("")}
+        </div>
+        <textarea class="adjust-note" id="adjust-note" placeholder="Motivo del ajuste (opcional) — ej: paciente estable, dolor controlado..."></textarea>
+        <button class="btn-save-confirm" onclick="saveAdjust()">Guardar ajuste</button>
+      </div>
+      <div id="confirm-result"></div>
+    </div>` : "";
+
+  container.innerHTML = `
+    <div class="esi-banner esi-${esi}">
+      <div class="esi-circle">${esi}</div>
+      <div class="esi-text">
+        <h3>ESI Nivel ${esi} — ${ESI_LABELS[esi] || ""}</h3>
+        <p>${r.regla_aplicada || ""}</p>
+      </div>
+    </div>
+
+    ${r.primary_concern ? `
+    <div class="result-section">
+      <h4>Preocupación principal</h4>
+      <p>${escapeHtml(r.primary_concern)}</p>
+    </div>` : ""}
+
+    ${r.clinical_reasoning ? `
+    <div class="result-section">
+      <h4>Razonamiento clínico</h4>
+      <p>${escapeHtml(r.clinical_reasoning)}</p>
+    </div>` : ""}
+
+    ${flags.length ? `
+    <div class="result-section">
+      <h4>Señales de alarma</h4>
+      <div>${flags.map(f => `<span class="flag">⚠ ${escapeHtml(f)}</span>`).join("")}</div>
+    </div>` : ""}
+
+    ${questions.length ? `
+    <div class="result-section">
+      <h4>Preguntas al paciente / familiar</h4>
+      ${questions.map((q, i) => `<div class="question-item"><span class="question-num">${i+1}.</span><span>${escapeHtml(q)}</span></div>`).join("")}
+    </div>` : ""}
+
+    ${resources.length ? `
+    <div class="result-section">
+      <h4>Recursos inmediatos</h4>
+      <div>${resources.map(res => `<span class="resource">🔹 ${escapeHtml(res)}</span>`).join("")}</div>
+    </div>` : ""}
+
+    <div style="margin-top:12px;padding-top:10px;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af">
+      Modelo: ${MODEL} · ${new Date().toLocaleTimeString("es-AR")} · TriageAI Prototipo v1.0
+    </div>
+
+    ${confirmHTML}
+  `;
+}
+
+// ─── CONFIRMACIÓN DEL TRIAGISTA ─────────────────────────────
+function confirmESI(action) {
+  document.getElementById("btn-ok").classList.toggle("selected", action === "ok");
+  document.getElementById("btn-adj").classList.toggle("selected", action === "adjust");
+
+  const adjPanel = document.getElementById("adjust-panel");
+  if (action === "adjust") {
+    adjPanel.classList.add("open");
+    selectedAdjustESI = null;
+  } else {
+    adjPanel.classList.remove("open");
+    // Confirmar directamente
+    const esi = currentResult?.result?.esi_level;
+    saveConfirmation({ type: "confirmed", esi_final: esi, note: "" });
+  }
+}
+
+function selectAdjustESI(n) {
+  selectedAdjustESI = n;
+  [1,2,3,4,5].forEach(i => {
+    const el = document.getElementById(`esi-opt-${i}`);
+    el.className = `esi-opt${i === n ? " sel-" + n : ""}`;
+  });
+}
+
+function saveAdjust() {
+  if (!selectedAdjustESI) {
+    alert("Seleccioná el nivel ESI correcto antes de guardar.");
+    return;
+  }
+  const note = document.getElementById("adjust-note").value.trim();
+  saveConfirmation({ type: "adjusted", esi_final: selectedAdjustESI, note });
+}
+
+function saveConfirmation({ type, esi_final, note }) {
+  if (!currentResult) return;
+
+  const esi_ia = currentResult.result.esi_level;
+  const isAdj  = type === "adjusted";
+
+  // Actualizar en historial
+  if (history.length > 0) {
+    history[0].confirmed  = true;
+    history[0].type       = type;
+    history[0].esi_final  = esi_final;
+    history[0].note       = note;
+  }
+
+  // Mostrar badge de confirmación
+  const res = document.getElementById("confirm-result");
+  if (res) {
+    res.innerHTML = isAdj
+      ? `<div class="confirmed-badge confirmed-adj">
+           ✎ Ajustado por triagista: ESI ${esi_ia} → ESI ${esi_final}
+           ${note ? `<span style="color:#9ca3af">· ${escapeHtml(note)}</span>` : ""}
+         </div>`
+      : `<div class="confirmed-badge confirmed-ok">
+           ✓ Confirmado por triagista · ESI ${esi_final}
+         </div>`;
+  }
+
+  // Ocultar botones de confirmación
+  const panel = document.getElementById("confirm-panel");
+  if (panel) {
+    const btns = panel.querySelector(".confirm-btns");
+    const adj  = panel.querySelector(".adjust-panel");
+    if (btns) btns.style.display = "none";
+    if (adj)  adj.style.display  = "none";
+  }
+
+  renderHistory();
+  updateExportBar();
+  setStatus("ok", isAdj ? `ESI ajustado a ${esi_final} por triagista · guardado` : `ESI ${esi_final} confirmado por triagista · guardado`);
+}
+
+// ─── EXPORTAR SESIÓN ────────────────────────────────────────
+function exportSession() {
+  const data = {
+    export_date: new Date().toISOString(),
+    model: MODEL,
+    total_cases: history.length,
+    confirmed_cases: history.filter(h => h.confirmed).length,
+    cases: history.map((h, i) => ({
+      id: history.length - i,
+      time: h.time,
+      label: h.motivo,
+      esi_ia: h.esi,
+      confirmed: h.confirmed || false,
+      type: h.type || "pending",
+      esi_final: h.esi_final || null,
+      note: h.note || "",
+      result: h.result
+    })).reverse()
+  };
+
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = `triage_sesion_${new Date().toISOString().slice(0,10)}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function updateExportBar() {
+  const bar = document.getElementById("export-bar");
+  const total = history.length;
+  const confirmed = history.filter(h => h.confirmed).length;
+  if (total > 0) {
+    bar.classList.add("visible");
+    document.getElementById("export-count").textContent = total;
+    document.getElementById("confirmed-count").textContent = confirmed;
+    document.getElementById("session-count").textContent = `${total} caso${total !== 1 ? "s" : ""}`;
+  } else {
+    bar.classList.remove("visible");
+  }
+}
+
+// ─── HISTORIAL ──────────────────────────────────────────────
+function addHistory(result, motivo) {
+  const esi = result.esi_level || "?";
+  history.unshift({
+    esi, motivo: motivo.substring(0, 40),
+    time: new Date().toLocaleTimeString("es-AR"),
+    result, confirmed: false
+  });
+  if (history.length > 10) history.pop();
+  renderHistory();
+  updateExportBar();
+}
+
+function renderHistory() {
+  const list = document.getElementById("history-list");
+  if (!history.length) {
+    list.innerHTML = '<div class="history-empty">Sin clasificaciones aún</div>';
+    return;
+  }
+  list.innerHTML = history.map((h, i) => {
+    const statusIcon = h.confirmed
+      ? (h.type === "adjusted"
+          ? `<span class="h-status hs-adj" title="Ajustado a ESI ${h.esi_final}">✎ ${h.esi_final}</span>`
+          : `<span class="h-status hs-ok" title="Confirmado">✓</span>`)
+      : `<span class="h-status hs-pen" title="Pendiente de confirmación">⋯</span>`;
+    return `
+      <div class="history-item" onclick="showHistory(${i})">
+        <div class="h-badge h-${h.esi}">${h.esi}</div>
+        <div class="h-info">
+          <div class="h-name">${escapeHtml(h.motivo)}</div>
+          <div class="h-time">${h.time}</div>
+        </div>
+        ${statusIcon}
+      </div>`;
+  }).join("");
+}
+
+function showHistory(i) {
+  document.getElementById("placeholder").style.display = "none";
+  const content = document.getElementById("result-content");
+  content.style.display = "block";
+  const h = history[i];
+  renderResult(h.result, content, false);
+  // Mostrar confirmación ya guardada si existe
+  if (h.confirmed) {
+    const extra = document.createElement("div");
+    extra.className = "confirm-panel";
+    extra.innerHTML = h.type === "adjusted"
+      ? `<div class="confirmed-badge confirmed-adj">✎ Ajustado: ESI ${h.esi} → ESI ${h.esi_final}${h.note ? " · " + escapeHtml(h.note) : ""}</div>`
+      : `<div class="confirmed-badge confirmed-ok">✓ Confirmado por triagista · ESI ${h.esi_final}</div>`;
+    content.appendChild(extra);
+  }
+}
+
+// ─── LIMPIAR FORMULARIO ─────────────────────────────────────
+function clearForm() {
+  ["edad","sexo","fc","pa_s","pa_d","spo2","fr","temp","motivo","sintomas","antecedentes","medicacion","alergias"]
+    .forEach(id => { document.getElementById(id).value = ""; });
+  ["fc","pa_s","pa_d","spo2"].forEach(id => document.getElementById(id).className = "");
+  document.getElementById("free-text").value = "";
+  document.getElementById("placeholder").style.display = "block";
+  document.getElementById("result-content").style.display = "none";
+  currentResult = null;
+  selectedAdjustESI = null;
+}
+
+// ─── UTILIDADES ─────────────────────────────────────────────
+function escapeHtml(str) {
+  return String(str || "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+// ─── INIT ───────────────────────────────────────────────────
+checkOllama();
+</script>
+</body>
+</html>

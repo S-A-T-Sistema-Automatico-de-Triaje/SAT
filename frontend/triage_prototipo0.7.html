@@ -1,0 +1,3286 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>S.A.T. — Sistema Automático de Triaje</title>
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet"
+    >
+
+    <style>
+        :root {
+            --bg: #080F1C;
+            --surface: #0D1626;
+            --surface2: #111E35;
+            --border: #1E3050;
+            --border2: #263B5E;
+
+            --blue: #2563EB;
+            --blue-soft: #1D4ED8;
+
+            --green: #10B981;
+            --red: #EF4444;
+
+            --text: #E2EAF4;
+            --muted: #7A92B2;
+            --dim: #3D5478;
+
+            --mono: 'JetBrains Mono', monospace;
+            --sans: 'Inter', system-ui, sans-serif;
+
+            --esi1-c: #FF4444;
+            --esi1-bg: #1A0808;
+            --esi1-b: rgba(255,68,68,.35);
+
+            --esi2-c: #FF8C42;
+            --esi2-bg: #1A0E06;
+            --esi2-b: rgba(255,140,66,.35);
+
+            --esi3-c: #FFD600;
+            --esi3-bg: #1A1700;
+            --esi3-b: rgba(255,214,0,.35);
+
+            --esi4-c: #2ECC71;
+            --esi4-bg: #071A10;
+            --esi4-b: rgba(46,204,113,.35);
+
+            --esi5-c: #4DABF7;
+            --esi5-bg: #071020;
+            --esi5-b: rgba(77,171,247,.35);
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: var(--sans);
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ============================================================
+           HEADER
+        ============================================================ */
+
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            height: 56px;
+            flex-shrink: 0;
+        }
+
+        .logo {
+            width: 34px;
+            height: 34px;
+            background: var(--blue);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: var(--mono);
+            font-weight: 600;
+            font-size: 13px;
+            color: white;
+        }
+
+        .header-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .header-sub {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .header-right {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .model-badge {
+            background: var(--surface2);
+            border: 1px solid var(--border2);
+            border-radius: 7px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-family: var(--mono);
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        .sdot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+        }
+
+        .sdot-ok {
+            background: #10B981;
+            box-shadow: 0 0 6px #10B981;
+        }
+
+        .sdot-err {
+            background: #EF4444;
+            box-shadow: 0 0 6px #EF4444;
+        }
+
+        /* ============================================================
+           LAYOUT
+        ============================================================ */
+
+        .layout {
+            display: grid;
+            grid-template-columns: 440px 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        .panel-left {
+            border-right: 1px solid var(--border);
+            background: var(--surface);
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            height: calc(100vh - 56px);
+        }
+
+        .panel-right {
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            height: calc(100vh - 56px);
+            background: var(--bg);
+        }
+
+        /* ============================================================
+           INPUT HEADER
+        ============================================================ */
+
+        .input-header {
+            padding: 18px 20px 14px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .input-header h2 {
+            font-size: 14px;
+        }
+
+        .input-header p {
+            font-size: 12px;
+            color: var(--muted);
+        }
+
+        /* ============================================================
+           SELECTOR DE MODELO
+        ============================================================ */
+
+        .model-selector-box {
+            padding: 14px 20px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+
+        .model-selector-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 7px;
+        }
+
+        .model-selector {
+            width: 100%;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 9px 11px;
+            font-size: 13px;
+            font-family: var(--sans);
+            color: var(--text);
+            outline: none;
+        }
+
+        .model-selector:focus {
+            border-color: var(--blue);
+        }
+
+        .model-description {
+            margin-top: 7px;
+            font-size: 11px;
+            color: var(--muted);
+            min-height: 16px;
+        }
+
+        .model-error {
+            margin-top: 7px;
+            font-size: 11px;
+            color: var(--red);
+            display: none;
+        }
+
+        /* ============================================================
+           FORM
+        ============================================================ */
+
+        .form-body {
+            padding: 16px 20px;
+        }
+
+        .form-section {
+            margin-bottom: 20px;
+        }
+
+        .fs-label {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .fs-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-bottom: 8px;
+        }
+
+        .field label {
+            font-size: 11px;
+            color: var(--muted);
+        }
+
+        .field input,
+        .field select {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 7px;
+            padding: 8px 11px;
+            font-size: 13px;
+            font-family: var(--sans);
+            color: var(--text);
+            outline: none;
+        }
+
+        .field input:focus,
+        .field select:focus {
+            border-color: var(--blue);
+        }
+
+        .field input:read-only {
+            opacity: .75;
+        }
+
+        .grid2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .grid3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 8px;
+        }
+
+        /* ============================================================
+           FOOTER
+        ============================================================ */
+
+        .input-footer {
+            padding: 14px 20px;
+            border-top: 1px solid var(--border);
+        }
+
+        .btn-classify {
+            width: 100%;
+            padding: 12px;
+            background: var(--blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .btn-classify:hover {
+            background: var(--blue-soft);
+        }
+
+        .btn-classify:disabled {
+            opacity: .6;
+            cursor: wait;
+        }
+
+        /* ============================================================
+           RESULTADO
+        ============================================================ */
+
+        .result-zone {
+            padding: 20px;
+        }
+
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 320px;
+            color: var(--dim);
+            text-align: center;
+            gap: 12px;
+        }
+
+        .placeholder-icon {
+            font-size: 44px;
+            font-family: var(--mono);
+        }
+
+        .esi-card {
+            border-radius: 10px;
+            border: 1px solid;
+            padding: 18px 20px;
+            margin-bottom: 14px;
+        }
+
+        .esi-1 {
+            background: var(--esi1-bg);
+            border-color: var(--esi1-b);
+        }
+
+        .esi-2 {
+            background: var(--esi2-bg);
+            border-color: var(--esi2-b);
+        }
+
+        .esi-3 {
+            background: var(--esi3-bg);
+            border-color: var(--esi3-b);
+        }
+
+        .esi-4 {
+            background: var(--esi4-bg);
+            border-color: var(--esi4-b);
+        }
+
+        .esi-5 {
+            background: var(--esi5-bg);
+            border-color: var(--esi5-b);
+        }
+
+        .esi-header {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .esi-num {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: 700;
+            font-family: var(--mono);
+            border: 2px solid;
+        }
+
+        .esi-1 .esi-num {
+            color: var(--esi1-c);
+            border-color: var(--esi1-c);
+        }
+
+        .esi-2 .esi-num {
+            color: var(--esi2-c);
+            border-color: var(--esi2-c);
+        }
+
+        .esi-3 .esi-num {
+            color: var(--esi3-c);
+            border-color: var(--esi3-c);
+        }
+
+        .esi-4 .esi-num {
+            color: var(--esi4-c);
+            border-color: var(--esi4-c);
+        }
+
+        .esi-5 .esi-num {
+            color: var(--esi5-c);
+            border-color: var(--esi5-c);
+        }
+
+        .result-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 14px;
+            margin-bottom: 14px;
+        }
+
+        .rs {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 14px 16px;
+        }
+
+        .rs-title {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: .1em;
+            text-transform: uppercase;
+            color: var(--dim);
+            margin-bottom: 6px;
+        }
+
+        .confidence {
+            font-family: var(--mono);
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .probabilities {
+            display: flex;
+            flex-direction: column;
+            gap: 7px;
+        }
+
+        .prob-row {
+            display: grid;
+            grid-template-columns: 50px 1fr 55px;
+            align-items: center;
+            gap: 8px;
+            font-size: 11px;
+        }
+
+        .prob-bar {
+            height: 7px;
+            background: var(--border);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .prob-fill {
+            height: 100%;
+            background: var(--blue);
+            border-radius: 10px;
+        }
+
+        .info-box {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 9px;
+            padding: 14px 16px;
+        }
+
+        .model-info {
+            font-family: var(--mono);
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.8;
+        }
+
+        .error-box {
+            color: var(--red);
+            padding: 20px;
+            background: var(--surface2);
+            border: 1px solid rgba(239,68,68,.3);
+            border-radius: 8px;
+        }
+
+        .warning-box {
+            color: #FFD600;
+            padding: 14px 16px;
+            background: var(--surface2);
+            border: 1px solid rgba(255,214,0,.25);
+            border-radius: 8px;
+            margin-top: 14px;
+            font-size: 12px;
+        }
+
+        @media (max-width: 900px) {
+            .layout {
+                grid-template-columns: 1fr;
+                overflow: auto;
+            }
+
+            .panel-left,
+            .panel-right {
+                height: auto;
+                overflow: visible;
+            }
+
+            .panel-left {
+                border-right: none;
+                border-bottom: 1px solid var(--border);
+            }
+
+            .result-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .header-sub {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+
+<body>
+
+<header class="header">
+
+    <div class="logo">
+        T+
+    </div>
+
+    <div>
+        <span class="header-title">
+            S.A.T.
+        </span>
+
+        <span class="header-sub">
+            — Sistema Automático de Triaje
+        </span>
+    </div>
+
+    <div class="header-right">
+
+        <div
+            class="model-badge"
+            id="model-badge"
+        >
+            Cargando modelo...
+        </div>
+
+        <div class="status-pill">
+
+            <div
+                class="sdot sdot-err"
+                id="sdot"
+            ></div>
+
+            <span id="stext">
+                Comprobando conexión...
+            </span>
+
+        </div>
+
+    </div>
+
+</header>
+
+
+<div class="layout">
+
+<!-- ============================================================
+     IZQUIERDA
+============================================================ -->
+
+<aside class="panel-left">
+
+
+<div class="input-header">
+
+    <h2>
+        Datos del paciente
+    </h2>
+
+    <p id="form-description">
+        Parámetros utilizados por S.A.T.
+    </p>
+
+</div>
+
+
+<!-- ============================================================
+     SELECTOR DE MODELO
+============================================================ -->
+
+<div class="model-selector-box">
+
+    <div class="model-selector-label">
+        Modelo de predicción
+    </div>
+
+    <select
+        id="model-selector"
+        class="model-selector"
+    >
+        <option value="">
+            Cargando modelos...
+        </option>
+    </select>
+
+    <div
+        id="model-description"
+        class="model-description"
+    >
+        Consultando modelos disponibles...
+    </div>
+
+    <div
+        id="model-error"
+        class="model-error"
+    ></div>
+
+</div>
+
+
+<div class="form-body">
+
+
+<!-- ============================================================
+     DATOS GENERALES
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Datos generales
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Edad
+</label>
+
+<input
+    type="number"
+    id="age"
+    value="60"
+    min="0"
+    max="120"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Sexo
+</label>
+
+<select id="sex">
+
+<option value="M">
+    Masculino
+</option>
+
+<option value="F">
+    Femenino
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     LLEGADA
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Llegada
+</div>
+
+
+<div class="field">
+
+<label>
+    Modo de llegada
+</label>
+
+<select id="arrival_mode">
+
+<option value="walk-in">
+    Ingreso por cuenta propia
+</option>
+
+<option value="ambulance">
+    Ambulancia
+</option>
+
+<option value="police">
+    Policía
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     SIGNOS VITALES
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Signos vitales
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    PA sistólica
+</label>
+
+<input
+    type="number"
+    id="systolic_bp"
+    value="120"
+    step="0.1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    PA diastólica
+</label>
+
+<input
+    type="number"
+    id="diastolic_bp"
+    value="80"
+    step="0.1"
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Frecuencia cardíaca
+</label>
+
+<input
+    type="number"
+    id="heart_rate"
+    value="80"
+    step="0.1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Frecuencia respiratoria
+</label>
+
+<input
+    type="number"
+    id="respiratory_rate"
+    value="16"
+    step="0.1"
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Temperatura °C
+</label>
+
+<input
+    type="number"
+    id="temperature_c"
+    value="36.7"
+    step="0.1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    SpO₂ %
+</label>
+
+<input
+    type="number"
+    id="spo2"
+    value="98"
+    step="0.1"
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Presión arterial media
+</label>
+
+<input
+    type="number"
+    id="mean_arterial_pressure"
+    readonly
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Presión de pulso
+</label>
+
+<input
+    type="number"
+    id="pulse_pressure"
+    readonly
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     ESTADO NEUROLÓGICO
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Estado neurológico
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Estado mental
+</label>
+
+<select id="mental_status_triage">
+
+<option value="alert">
+    Alerta
+</option>
+
+<option value="drowsy">
+    Somnoliento
+</option>
+
+<option value="confused">
+    Confundido
+</option>
+
+<option value="agitated">
+    Agitado
+</option>
+
+<option value="unresponsive">
+    No responde
+</option>
+
+</select>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    GCS total
+</label>
+
+<input
+    type="number"
+    id="gcs_total"
+    value="15"
+    min="3"
+    max="15"
+    step="1"
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Dolor (0-10)
+</label>
+
+<input
+    type="number"
+    id="pain_score"
+    value="5"
+    min="0"
+    max="10"
+    step="1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Localización
+</label>
+
+<select id="pain_location">
+
+<option value="none">
+    Ninguno
+</option>
+
+<option value="chest">
+    Pecho
+</option>
+
+<option value="abdomen">
+    Abdomen
+</option>
+
+<option value="head">
+    Cabeza
+</option>
+
+<option value="back">
+    Espalda
+</option>
+
+<option value="pelvis">
+    Pelvis
+</option>
+
+<option value="multiple">
+    Múltiple
+</option>
+
+<option value="unknown">
+    Desconocido
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     ANTECEDENTES
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Antecedentes
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Visitas urgencias 12 meses
+</label>
+
+<input
+    type="number"
+    id="num_prior_ed_visits_12m"
+    value="0"
+    min="0"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Internaciones 12 meses
+</label>
+
+<input
+    type="number"
+    id="num_prior_admissions_12m"
+    value="0"
+    min="0"
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Medicamentos activos
+</label>
+
+<input
+    type="number"
+    id="num_active_medications"
+    value="0"
+    min="0"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Comorbilidades
+</label>
+
+<input
+    type="number"
+    id="num_comorbidities"
+    value="0"
+    min="0"
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     ANTROPOMETRÍA
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Antropometría
+</div>
+
+
+<div class="grid3">
+
+<div class="field">
+
+<label>
+    Peso kg
+</label>
+
+<input
+    type="number"
+    id="weight_kg"
+    value="70"
+    min="1"
+    step="0.1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Altura cm
+</label>
+
+<input
+    type="number"
+    id="height_cm"
+    value="170"
+    min="30"
+    max="250"
+    step="0.1"
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    IMC
+</label>
+
+<input
+    type="number"
+    id="bmi"
+    readonly
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<!-- ============================================================
+     MOTIVO
+============================================================ -->
+
+<div class="form-section">
+
+<div class="fs-label">
+    Motivo de consulta
+</div>
+
+
+<div class="field">
+
+<label>
+    Sistema afectado
+</label>
+
+<select id="chief_complaint_system">
+
+<option value="cardiovascular">
+    Cardiovascular
+</option>
+
+<option value="respiratory">
+    Respiratorio
+</option>
+
+<option value="neurological">
+    Neurológico
+</option>
+
+<option value="gastrointestinal">
+    Gastrointestinal
+</option>
+
+<option value="genitourinary">
+    Genitourinario
+</option>
+
+<option value="musculoskeletal">
+    Musculoesquelético
+</option>
+
+<option value="dermatological">
+    Dermatológico
+</option>
+
+<option value="psychiatric">
+    Psiquiátrico
+</option>
+
+<option value="other">
+    Otro
+</option>
+
+<option value="general">
+    General
+</option>
+
+</select>
+
+</div>
+
+</div>
+
+
+</div>
+
+
+<!-- ============================================================
+     FOOTER
+============================================================ -->
+
+<div class="input-footer">
+
+
+<div class="form-section">
+
+<div class="fs-label">
+    Datos automáticos de llegada
+</div>
+
+
+<div class="grid3">
+
+<div class="field">
+
+<label>
+    Día
+</label>
+
+<input
+    type="text"
+    id="arrival_day_display"
+    readonly
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Mes
+</label>
+
+<input
+    type="text"
+    id="arrival_month_display"
+    readonly
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Hora
+</label>
+
+<input
+    type="text"
+    id="arrival_hour_display"
+    readonly
+>
+
+</div>
+
+</div>
+
+
+<div class="grid2">
+
+<div class="field">
+
+<label>
+    Estación
+</label>
+
+<input
+    type="text"
+    id="arrival_season_display"
+    readonly
+>
+
+</div>
+
+
+<div class="field">
+
+<label>
+    Turno
+</label>
+
+<input
+    type="text"
+    id="shift_display"
+    readonly
+>
+
+</div>
+
+</div>
+
+</div>
+
+
+<button
+    class="btn-classify"
+    id="btn-classify"
+    onclick="classify()"
+    disabled
+>
+    Cargando modelos...
+</button>
+
+
+</div>
+
+
+</aside>
+
+
+<!-- ============================================================
+     RESULTADO
+============================================================ -->
+
+<main class="panel-right">
+
+<div class="result-zone">
+
+
+<div
+    class="placeholder"
+    id="placeholder"
+>
+
+<div class="placeholder-icon">
+    S.A.T.
+</div>
+
+<h3>
+    Sin predicción activa
+</h3>
+
+<p id="placeholder-text">
+    Ingresá los datos clínicos y ejecutá la predicción.
+</p>
+
+</div>
+
+
+<div
+    id="result-content"
+    style="display:none"
+></div>
+
+
+</div>
+
+</main>
+
+
+</div>
+
+
+<script>
+
+/* ============================================================
+   CONFIGURACIÓN
+============================================================ */
+
+const BACKEND_URL = "http://localhost:8000";
+
+window.satArrivalData = {};
+
+window.satModels = {};
+window.satSelectedModel = null;
+
+
+/* ============================================================
+   UTILIDADES
+============================================================ */
+
+function numberValue(id, defaultValue = 0) {
+
+    const element = document.getElementById(id);
+
+    if (!element) {
+        return defaultValue;
+    }
+
+    const value = parseFloat(element.value);
+
+    return Number.isFinite(value)
+        ? value
+        : defaultValue;
+}
+
+
+function stringValue(id, defaultValue = "") {
+
+    const element = document.getElementById(id);
+
+    if (!element) {
+        return defaultValue;
+    }
+
+    return element.value;
+}
+
+
+function escapeHtml(value) {
+
+    return String(value)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#039;");
+}
+
+
+/* ============================================================
+   MAP Y PRESIÓN DE PULSO
+============================================================ */
+
+function updatePressureValues() {
+
+    const systolic =
+        numberValue("systolic_bp");
+
+    const diastolic =
+        numberValue("diastolic_bp");
+
+    const pulse =
+        systolic - diastolic;
+
+    const map =
+        diastolic + (pulse / 3);
+
+    document.getElementById(
+        "pulse_pressure"
+    ).value = pulse.toFixed(2);
+
+    document.getElementById(
+        "mean_arterial_pressure"
+    ).value = map.toFixed(2);
+}
+
+
+/* ============================================================
+   IMC
+============================================================ */
+
+function updateBMI() {
+
+    const weight =
+        numberValue("weight_kg");
+
+    const height =
+        numberValue("height_cm");
+
+    const bmiInput =
+        document.getElementById("bmi");
+
+    if (weight > 0 && height > 0) {
+
+        const h =
+            height / 100;
+
+        const bmi =
+            weight / (h * h);
+
+        bmiInput.value =
+            bmi.toFixed(2);
+    }
+}
+
+
+/* ============================================================
+   ESTACIÓN
+============================================================ */
+
+function getSeason(month) {
+
+    if (
+        month === 12 ||
+        month === 1 ||
+        month === 2
+    ) {
+        return "summer";
+    }
+
+    if (
+        month >= 3 &&
+        month <= 5
+    ) {
+        return "autumn";
+    }
+
+    if (
+        month >= 6 &&
+        month <= 8
+    ) {
+        return "winter";
+    }
+
+    return "spring";
+}
+
+
+/* ============================================================
+   TURNO
+============================================================ */
+
+function getShift(hour) {
+
+    if (
+        hour >= 6 &&
+        hour < 12
+    ) {
+        return "morning";
+    }
+
+    if (
+        hour >= 12 &&
+        hour < 18
+    ) {
+        return "afternoon";
+    }
+
+    if (
+        hour >= 18 &&
+        hour < 24
+    ) {
+        return "evening";
+    }
+
+    return "night";
+}
+
+
+/* ============================================================
+   NOMBRE TURNO
+============================================================ */
+
+function getShiftLabel(shift) {
+
+    const labels = {
+
+        morning:
+            "Mañana",
+
+        afternoon:
+            "Tarde",
+
+        evening:
+            "Noche",
+
+        night:
+            "Madrugada"
+    };
+
+    return labels[shift] || shift;
+}
+
+
+/* ============================================================
+   NOMBRE ESTACIÓN
+============================================================ */
+
+function getSeasonLabel(season) {
+
+    const labels = {
+
+        summer:
+            "Verano",
+
+        autumn:
+            "Otoño",
+
+        winter:
+            "Invierno",
+
+        spring:
+            "Primavera"
+    };
+
+    return labels[season] || season;
+}
+
+
+/* ============================================================
+   DATOS AUTOMÁTICOS
+============================================================ */
+
+function actualizarDatosAutomaticos() {
+
+    const ahora =
+        new Date();
+
+    const dia =
+        ahora.getDate();
+
+    const mes =
+        ahora.getMonth() + 1;
+
+    const hora =
+        ahora.getHours();
+
+    const minutos =
+        ahora.getMinutes();
+
+    const season =
+        getSeason(mes);
+
+    const shift =
+        getShift(hora);
+
+
+    document.getElementById(
+        "arrival_day_display"
+    ).value =
+        String(dia).padStart(2, "0");
+
+
+    document.getElementById(
+        "arrival_month_display"
+    ).value =
+        String(mes).padStart(2, "0");
+
+
+    document.getElementById(
+        "arrival_hour_display"
+    ).value =
+        `${String(hora).padStart(2, "0")}:${String(minutos).padStart(2, "0")}`;
+
+
+    document.getElementById(
+        "arrival_season_display"
+    ).value =
+        getSeasonLabel(season);
+
+
+    document.getElementById(
+        "shift_display"
+    ).value =
+        getShiftLabel(shift);
+
+
+    window.satArrivalData = {
+
+        arrival_day:
+            dia,
+
+        arrival_month:
+            mes,
+
+        arrival_hour:
+            hora,
+
+        arrival_season:
+            season,
+
+        shift:
+            shift
+    };
+}
+
+
+/* ============================================================
+   NORMALIZAR MODELOS RECIBIDOS
+============================================================ */
+
+function normalizeModelsResponse(data) {
+
+    let rawModels = null;
+
+    if (Array.isArray(data)) {
+        rawModels = data;
+    }
+    else if (Array.isArray(data.models)) {
+        rawModels = data.models;
+    }
+    else if (
+        data.models &&
+        typeof data.models === "object"
+    ) {
+        rawModels = Object.entries(data.models)
+            .map(([id, value]) => {
+
+                if (
+                    value &&
+                    typeof value === "object"
+                ) {
+                    return {
+                        id,
+                        ...value
+                    };
+                }
+
+                return {
+                    id,
+                    name: String(value)
+                };
+            });
+    }
+
+    if (!rawModels) {
+        return [];
+    }
+
+    return rawModels
+        .map(model => {
+
+            const id =
+                model.id ||
+                model.model_id ||
+                model.key ||
+                model.name;
+
+            return {
+
+                id: String(id),
+
+                name:
+                    model.name ||
+                    model.model_name ||
+                    String(id),
+
+                version:
+                    model.version ||
+                    "",
+
+                algorithm:
+                    model.algorithm ||
+                    model.model_type ||
+                    model.type ||
+                    "N/D",
+
+                description:
+                    model.description ||
+                    "",
+
+                loaded:
+                    model.loaded !== false,
+
+                error:
+                    model.error ||
+                    null,
+
+                features:
+                    model.features ||
+                    model.feature_names ||
+                    []
+            };
+        })
+        .filter(model => model.id);
+}
+
+
+/* ============================================================
+   ACTUALIZAR INFORMACIÓN VISUAL DEL MODELO
+============================================================ */
+
+function updateModelUI() {
+
+    const selector =
+        document.getElementById("model-selector");
+
+    const id =
+        selector.value;
+
+    const model =
+        window.satModels[id];
+
+    const badge =
+        document.getElementById("model-badge");
+
+    const description =
+        document.getElementById("model-description");
+
+    const error =
+        document.getElementById("model-error");
+
+    const formDescription =
+        document.getElementById("form-description");
+
+    const placeholderText =
+        document.getElementById("placeholder-text");
+
+
+    window.satSelectedModel =
+        model || null;
+
+
+    if (!model) {
+
+        badge.textContent =
+            "Sin modelo";
+
+        description.textContent =
+            "No hay un modelo seleccionado.";
+
+        error.style.display =
+            "none";
+
+        return;
+    }
+
+
+    badge.textContent =
+        `${model.algorithm} · ${model.id}`;
+
+
+    description.textContent =
+        model.description ||
+        `${model.name}${model.version ? ` · v${model.version}` : ""}`;
+
+
+    if (model.error) {
+
+        error.style.display =
+            "block";
+
+        error.textContent =
+            `Error: ${model.error}`;
+
+    }
+    else {
+
+        error.style.display =
+            "none";
+    }
+
+
+    formDescription.textContent =
+        `Parámetros utilizados por ${model.name}`;
+
+
+    placeholderText.textContent =
+        `Ingresá los datos clínicos y ejecutá la predicción con ${model.name}.`;
+}
+
+
+/* ============================================================
+   CARGAR MODELOS
+============================================================ */
+
+async function loadModels() {
+
+    const selector =
+        document.getElementById("model-selector");
+
+    const button =
+        document.getElementById("btn-classify");
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${BACKEND_URL}/api/models`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "MODELOS DISPONIBLES:",
+            data
+        );
+
+
+        const models =
+            normalizeModelsResponse(data);
+
+
+        if (!models.length) {
+
+            throw new Error(
+                "El backend no devolvió modelos disponibles."
+            );
+        }
+
+
+        window.satModels = {};
+
+
+        selector.innerHTML = "";
+
+
+        models.forEach(model => {
+
+            window.satModels[model.id] =
+                model;
+
+
+            const option =
+                document.createElement("option");
+
+
+            option.value =
+                model.id;
+
+
+            option.textContent =
+                `${model.name} · ${model.algorithm}`;
+
+
+            if (model.error) {
+                option.textContent +=
+                    " · ERROR";
+            }
+
+
+            selector.appendChild(option);
+        });
+
+
+        /*
+         * Intentamos conservar v1.1 como modelo inicial.
+         * Si no existe, usamos el primer modelo disponible.
+         */
+
+        const preferred =
+            models.find(
+                model => model.id === "v1.1"
+            );
+
+
+        selector.value =
+            preferred
+                ? preferred.id
+                : models[0].id;
+
+
+        updateModelUI();
+
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "Ejecutar predicción";
+
+
+        selector.addEventListener(
+            "change",
+            updateModelUI
+        );
+
+
+        return true;
+
+    }
+    catch (error) {
+
+        console.error(
+            "Error cargando modelos:",
+            error
+        );
+
+
+        selector.innerHTML = `
+            <option value="">
+                Error cargando modelos
+            </option>
+        `;
+
+
+        document.getElementById(
+            "model-description"
+        ).textContent =
+            "No se pudieron obtener los modelos del backend.";
+
+
+        document.getElementById(
+            "model-error"
+        ).style.display =
+            "block";
+
+
+        document.getElementById(
+            "model-error"
+        ).textContent =
+            error.message;
+
+
+        button.disabled =
+            true;
+
+        button.textContent =
+            "Modelos no disponibles";
+
+
+        return false;
+    }
+}
+
+
+/* ============================================================
+   PAYLOAD
+============================================================ */
+
+function buildPayload() {
+
+    actualizarDatosAutomaticos();
+
+    updatePressureValues();
+
+    updateBMI();
+
+
+    const selectedModel =
+        document.getElementById(
+            "model-selector"
+        ).value;
+
+
+    return {
+
+        age:
+            numberValue("age"),
+
+        sex:
+            stringValue("sex"),
+
+        arrival_mode:
+            stringValue("arrival_mode"),
+
+
+        arrival_day:
+            window.satArrivalData.arrival_day,
+
+        arrival_month:
+            window.satArrivalData.arrival_month,
+
+        arrival_hour:
+            window.satArrivalData.arrival_hour,
+
+        arrival_season:
+            window.satArrivalData.arrival_season,
+
+        shift:
+            window.satArrivalData.shift,
+
+
+        chief_complaint_system:
+            stringValue(
+                "chief_complaint_system"
+            ),
+
+        pain_location:
+            stringValue(
+                "pain_location"
+            ),
+
+
+        mental_status_triage:
+            stringValue(
+                "mental_status_triage"
+            ),
+
+        gcs_total:
+            numberValue(
+                "gcs_total"
+            ),
+
+        pain_score:
+            numberValue(
+                "pain_score"
+            ),
+
+
+        heart_rate:
+            numberValue(
+                "heart_rate"
+            ),
+
+        respiratory_rate:
+            numberValue(
+                "respiratory_rate"
+            ),
+
+        systolic_bp:
+            numberValue(
+                "systolic_bp"
+            ),
+
+        diastolic_bp:
+            numberValue(
+                "diastolic_bp"
+            ),
+
+        mean_arterial_pressure:
+            numberValue(
+                "mean_arterial_pressure"
+            ),
+
+        pulse_pressure:
+            numberValue(
+                "pulse_pressure"
+            ),
+
+        spo2:
+            numberValue(
+                "spo2"
+            ),
+
+        temperature_c:
+            numberValue(
+                "temperature_c"
+            ),
+
+
+        num_prior_ed_visits_12m:
+            numberValue(
+                "num_prior_ed_visits_12m"
+            ),
+
+        num_prior_admissions_12m:
+            numberValue(
+                "num_prior_admissions_12m"
+            ),
+
+        num_active_medications:
+            numberValue(
+                "num_active_medications"
+            ),
+
+        num_comorbidities:
+            numberValue(
+                "num_comorbidities"
+            ),
+
+
+        weight_kg:
+            numberValue(
+                "weight_kg"
+            ),
+
+        height_cm:
+            numberValue(
+                "height_cm"
+            ),
+
+        bmi:
+            numberValue(
+                "bmi"
+            ),
+
+
+        /*
+         * IMPORTANTE:
+         *
+         * No hacemos aquí LabelEncoder ni ninguna transformación
+         * propia del modelo.
+         *
+         * El backend debe:
+         *
+         * V1.1  -> CatBoost
+         * V1.2  -> CatBoost / estructura correspondiente
+         * V2    -> LabelEncoder guardado en el bundle
+         *
+         * Esto evita que frontend y backend tengan dos versiones
+         * diferentes del preprocesamiento.
+         */
+
+        selected_model:
+            selectedModel
+    };
+}
+
+
+/* ============================================================
+   HEALTH CHECK
+============================================================ */
+
+async function checkBackend() {
+
+    const dot =
+        document.getElementById("sdot");
+
+    const text =
+        document.getElementById("stext");
+
+
+    try {
+
+        const response =
+            await fetch(
+                `${BACKEND_URL}/api/health`
+            );
+
+
+        if (!response.ok) {
+
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        dot.classList.remove(
+            "sdot-err"
+        );
+
+        dot.classList.add(
+            "sdot-ok"
+        );
+
+
+        const version =
+            data.version
+                ? `S.A.T. ${data.version}`
+                : "S.A.T. Online";
+
+
+        const selected =
+            window.satSelectedModel;
+
+
+        text.textContent =
+            selected
+                ? `${version} · ${selected.algorithm}`
+                : version;
+
+
+        return true;
+
+    }
+    catch (error) {
+
+        console.error(
+            "Backend:",
+            error
+        );
+
+
+        dot.classList.remove(
+            "sdot-ok"
+        );
+
+        dot.classList.add(
+            "sdot-err"
+        );
+
+
+        text.textContent =
+            "Backend desconectado";
+
+
+        return false;
+    }
+}
+
+
+/* ============================================================
+   ACTUALIZAR STATUS CUANDO CAMBIA EL MODELO
+============================================================ */
+
+function updateStatusModel() {
+
+    const text =
+        document.getElementById("stext");
+
+    const model =
+        window.satSelectedModel;
+
+
+    if (!model) {
+        return;
+    }
+
+
+    const dot =
+        document.getElementById("sdot");
+
+
+    if (
+        dot.classList.contains("sdot-ok")
+    ) {
+
+        text.textContent =
+            `S.A.T. Online · ${model.algorithm}`;
+    }
+}
+
+
+/* ============================================================
+   PREDICCIÓN
+============================================================ */
+
+async function classify() {
+
+    const button =
+        document.getElementById(
+            "btn-classify"
+        );
+
+    const placeholder =
+        document.getElementById(
+            "placeholder"
+        );
+
+    const result =
+        document.getElementById(
+            "result-content"
+        );
+
+
+    const selectedModel =
+        document.getElementById(
+            "model-selector"
+        ).value;
+
+
+    if (!selectedModel) {
+
+        alert(
+            "Seleccioná un modelo antes de ejecutar la predicción."
+        );
+
+        return;
+    }
+
+
+    const model =
+        window.satModels[selectedModel];
+
+
+    if (
+        model &&
+        model.error
+    ) {
+
+        result.style.display =
+            "block";
+
+        placeholder.style.display =
+            "none";
+
+
+        result.innerHTML = `
+            <div class="error-box">
+
+                <strong>
+                    El modelo seleccionado no está disponible
+                </strong>
+
+                <div style="
+                    margin-top:8px;
+                    font-family:var(--mono);
+                    font-size:12px;
+                ">
+                    ${escapeHtml(model.error)}
+                </div>
+
+            </div>
+        `;
+
+        return;
+    }
+
+
+    button.disabled =
+        true;
+
+    button.textContent =
+        "Procesando...";
+
+
+    placeholder.style.display =
+        "none";
+
+    result.style.display =
+        "block";
+
+
+    const modelName =
+        model
+            ? model.name
+            : selectedModel;
+
+
+    const modelAlgorithm =
+        model
+            ? model.algorithm
+            : "N/D";
+
+
+    result.innerHTML = `
+
+        <div style="
+            text-align:center;
+            padding:40px;
+            color:var(--muted);
+        ">
+
+            Evaluando paciente...
+
+            <div style="
+                margin-top:10px;
+                font-family:var(--mono);
+                font-size:11px;
+            ">
+
+                ${escapeHtml(modelName)}
+                ·
+                ${escapeHtml(modelAlgorithm)}
+
+            </div>
+
+        </div>
+    `;
+
+
+    try {
+
+        const payload =
+            buildPayload();
+
+
+        console.log(
+            "PAYLOAD:",
+            payload
+        );
+
+
+        const response =
+            await fetch(
+                `${BACKEND_URL}/predecir`,
+                {
+                    method:
+                        "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/json"
+                    },
+
+                    body:
+                        JSON.stringify(
+                            payload
+                        )
+                }
+            );
+
+
+        if (!response.ok) {
+
+            let message =
+                `HTTP ${response.status}`;
+
+
+            try {
+
+                const errorData =
+                    await response.json();
+
+
+                if (
+                    errorData.detail
+                ) {
+
+                    if (
+                        typeof errorData.detail ===
+                        "object"
+                    ) {
+
+                        message =
+                            errorData.detail.message ||
+                            errorData.detail.error ||
+                            JSON.stringify(
+                                errorData.detail
+                            );
+
+                    }
+                    else {
+
+                        message =
+                            errorData.detail;
+                    }
+                }
+
+            }
+            catch (_) {}
+
+
+            throw new Error(
+                message
+            );
+        }
+
+
+        const data =
+            await response.json();
+
+
+        console.log(
+            "RESPUESTA:",
+            data
+        );
+
+
+        renderResult(
+            data,
+            result
+        );
+
+    }
+    catch (error) {
+
+        console.error(
+            error
+        );
+
+
+        result.innerHTML = `
+
+            <div class="error-box">
+
+                <strong>
+                    Error durante la predicción
+                </strong>
+
+                <div style="
+                    margin-top:8px;
+                    font-family:var(--mono);
+                    font-size:12px;
+                ">
+
+                    ${escapeHtml(
+                        error.message
+                    )}
+
+                </div>
+
+            </div>
+
+        `;
+    }
+    finally {
+
+        button.disabled =
+            false;
+
+        button.textContent =
+            "Ejecutar predicción";
+    }
+}
+
+
+/* ============================================================
+   NORMALIZAR CONFIANZA
+============================================================ */
+
+function normalizePercent(value) {
+
+    const number =
+        Number(value);
+
+
+    if (!Number.isFinite(number)) {
+        return null;
+    }
+
+
+    /*
+     * Si backend devuelve:
+     *
+     * 0.87 -> 87%
+     *
+     * 87   -> 87%
+     */
+
+    if (
+        number >= 0 &&
+        number <= 1
+    ) {
+        return number * 100;
+    }
+
+
+    return number;
+}
+
+
+/* ============================================================
+   NORMALIZAR PROBABILIDADES
+============================================================ */
+
+function normalizeProbabilities(value) {
+
+    if (Array.isArray(value)) {
+
+        return value
+            .slice(0, 5)
+            .map(Number);
+    }
+
+
+    if (
+        value &&
+        typeof value === "object"
+    ) {
+
+        return [
+            value["1"] ?? value[1],
+            value["2"] ?? value[2],
+            value["3"] ?? value[3],
+            value["4"] ?? value[4],
+            value["5"] ?? value[5]
+        ]
+        .map(Number)
+        .filter(Number.isFinite);
+    }
+
+
+    return [];
+}
+
+
+/* ============================================================
+   RESULTADO
+============================================================ */
+
+function renderResult(
+    data,
+    container
+) {
+
+    let level =
+        Number(
+            data.triage_level
+        );
+
+
+    if (
+        !Number.isFinite(level) ||
+        level < 1 ||
+        level > 5
+    ) {
+        level = 1;
+    }
+
+
+    const confidence =
+        normalizePercent(
+            data.confidence
+        );
+
+
+    const labels = {
+
+        1:
+            "Resucitación Inmediata",
+
+        2:
+            "Emergencia / Muy Urgente",
+
+        3:
+            "Urgente",
+
+        4:
+            "Semi-urgente",
+
+        5:
+            "No Urgente"
+    };
+
+
+    const probabilities =
+        normalizeProbabilities(
+            data.probabilities
+        );
+
+
+    /*
+     * Información del modelo.
+     *
+     * Preferimos lo que devuelve el backend.
+     * Si no existe, usamos el modelo seleccionado.
+     */
+
+    const selectedModel =
+        window.satSelectedModel;
+
+
+    const modelName =
+        data.model ||
+        data.model_name ||
+        (
+            selectedModel
+                ? selectedModel.name
+                : "N/D"
+        );
+
+
+    const modelType =
+        data.model_type ||
+        data.algorithm ||
+        (
+            selectedModel
+                ? selectedModel.algorithm
+                : "N/D"
+        );
+
+
+    const modelId =
+        data.model_id ||
+        data.selected_model ||
+        (
+            selectedModel
+                ? selectedModel.id
+                : "N/D"
+        );
+
+
+    const modelVersion =
+        data.version ||
+        (
+            selectedModel
+                ? selectedModel.version
+                : ""
+        );
+
+
+    const featureCount =
+        Array.isArray(
+            data.features_used
+        )
+            ? data.features_used.length
+            : (
+                selectedModel &&
+                Array.isArray(selectedModel.features)
+                    ? selectedModel.features.length
+                    : "N/D"
+            );
+
+
+    /* ========================================================
+       PROBABILIDADES
+    ======================================================== */
+
+    let probabilitiesHtml =
+        "";
+
+
+    if (
+        probabilities.length > 0
+    ) {
+
+        probabilitiesHtml = `
+
+            <div class="rs">
+
+                <div class="rs-title">
+                    Probabilidades por nivel
+                </div>
+
+                <div class="probabilities">
+
+                    ${probabilities
+                        .slice(0, 5)
+                        .map(
+                            (
+                                probability,
+                                index
+                            ) => {
+
+                                let percent =
+                                    Number(
+                                        probability
+                                    );
+
+
+                                if (
+                                    Number.isFinite(percent) &&
+                                    percent >= 0 &&
+                                    percent <= 1
+                                ) {
+                                    percent *= 100;
+                                }
+
+
+                                if (
+                                    !Number.isFinite(percent)
+                                ) {
+                                    percent = 0;
+                                }
+
+
+                                percent =
+                                    Math.max(
+                                        0,
+                                        Math.min(
+                                            100,
+                                            percent
+                                        )
+                                    );
+
+
+                                return `
+
+                                    <div class="prob-row">
+
+                                        <span>
+                                            ESI ${index + 1}
+                                        </span>
+
+                                        <div class="prob-bar">
+
+                                            <div
+                                                class="prob-fill"
+                                                style="
+                                                    width:${percent}%;
+                                                "
+                                            ></div>
+
+                                        </div>
+
+                                        <span style="
+                                            text-align:right;
+                                            font-family:var(--mono);
+                                        ">
+
+                                            ${percent.toFixed(1)}%
+
+                                        </span>
+
+                                    </div>
+                                `;
+                            }
+                        )
+                        .join("")
+                    }
+
+                </div>
+
+            </div>
+
+        `;
+    }
+
+
+    /* ========================================================
+       RESULTADO FINAL
+    ======================================================== */
+
+    container.innerHTML = `
+
+        <div class="esi-card esi-${level}">
+
+            <div class="esi-header">
+
+                <div class="esi-num">
+                    ${level}
+                </div>
+
+                <div>
+
+                    <div style="
+                        font-size:18px;
+                        font-weight:700;
+                    ">
+
+                        ${labels[level]}
+
+                    </div>
+
+                    <div style="
+                        font-size:12px;
+                        color:var(--muted);
+                        font-family:var(--mono);
+                        margin-top:3px;
+                    ">
+
+                        ${escapeHtml(modelName)}
+                        ·
+                        ${escapeHtml(modelType)}
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <div class="result-grid">
+
+            <div class="rs">
+
+                <div class="rs-title">
+                    Nivel de triaje
+                </div>
+
+                <div style="
+                    font-size:22px;
+                    font-weight:600;
+                ">
+
+                    ESI ${level}
+
+                </div>
+
+            </div>
+
+
+            <div class="rs">
+
+                <div class="rs-title">
+                    Confianza
+                </div>
+
+                <div class="confidence">
+
+                    ${
+                        confidence !== null
+                            ? `${confidence.toFixed(2)}%`
+                            : "N/D"
+                    }
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        ${probabilitiesHtml}
+
+
+        <div class="rs" style="
+            margin-top:14px;
+        ">
+
+            <div class="rs-title">
+                Resultado de la predicción
+            </div>
+
+            <p style="
+                font-size:15px;
+                font-weight:500;
+                line-height:1.7;
+            ">
+
+                ${escapeHtml(
+                    data.justification ||
+                    data.message ||
+                    "Sin justificación disponible."
+                )}
+
+            </p>
+
+        </div>
+
+
+        <div class="info-box" style="
+            margin-top:14px;
+        ">
+
+            <div class="rs-title">
+                Motor utilizado
+            </div>
+
+            <div class="model-info">
+
+                Modelo:
+                ${escapeHtml(modelName)}
+
+                <br>
+
+                ID:
+                ${escapeHtml(modelId)}
+
+                <br>
+
+                Algoritmo:
+                ${escapeHtml(modelType)}
+
+                <br>
+
+                ${
+                    modelVersion
+                        ? `Versión: ${escapeHtml(modelVersion)}<br>`
+                        : ""
+                }
+
+                Target:
+                triage_acuity
+
+                <br>
+
+                Features:
+                ${featureCount}
+
+            </div>
+
+        </div>
+
+
+        <div class="warning-box">
+
+            <strong>
+                S.A.T. — Uso educativo
+            </strong>
+
+            <div style="margin-top:4px;">
+
+                Esta predicción es experimental y no sustituye
+                la evaluación ni el criterio de un profesional
+                de la salud.
+
+            </div>
+
+        </div>
+
+    `;
+}
+
+
+/* ============================================================
+   EVENTOS
+============================================================ */
+
+document
+    .getElementById("systolic_bp")
+    .addEventListener(
+        "input",
+        updatePressureValues
+    );
+
+
+document
+    .getElementById("diastolic_bp")
+    .addEventListener(
+        "input",
+        updatePressureValues
+    );
+
+
+document
+    .getElementById("weight_kg")
+    .addEventListener(
+        "input",
+        updateBMI
+    );
+
+
+document
+    .getElementById("height_cm")
+    .addEventListener(
+        "input",
+        updateBMI
+    );
+
+
+/*
+ * Si cambia el modelo, actualizamos también
+ * el estado visual del header.
+ */
+
+document
+    .getElementById("model-selector")
+    .addEventListener(
+        "change",
+        () => {
+
+            updateModelUI();
+            updateStatusModel();
+
+        }
+    );
+
+
+/* ============================================================
+   INICIALIZACIÓN
+============================================================ */
+
+async function initialize() {
+
+    updatePressureValues();
+
+    updateBMI();
+
+    actualizarDatosAutomaticos();
+
+
+    setInterval(
+        actualizarDatosAutomaticos,
+        60000
+    );
+
+
+    const backendOnline =
+        await checkBackend();
+
+
+    if (!backendOnline) {
+        return;
+    }
+
+
+    const modelsLoaded =
+        await loadModels();
+
+
+    if (!modelsLoaded) {
+        return;
+    }
+
+
+    updateStatusModel();
+
+
+    /*
+     * Consultamos model-info para diagnóstico.
+     *
+     * No dependemos de este endpoint para funcionar.
+     */
+
+    try {
+
+        const selectedModel =
+            document.getElementById(
+                "model-selector"
+            ).value;
+
+
+        const response =
+            await fetch(
+                `${BACKEND_URL}/api/model-info?model_id=${encodeURIComponent(selectedModel)}`
+            );
+
+
+        if (response.ok) {
+
+            const info =
+                await response.json();
+
+
+            console.log(
+                "MODEL INFO:",
+                info
+            );
+
+
+            console.log(
+                "Features:",
+                info.features
+            );
+
+
+            console.log(
+                "Categóricas:",
+                info.categorical_features
+            );
+
+
+            console.log(
+                "Numéricas:",
+                info.numeric_features
+            );
+        }
+
+    }
+    catch (error) {
+
+        console.warn(
+            "No se pudo obtener model-info:",
+            error
+        );
+    }
+}
+
+
+/* ============================================================
+   ARRANQUE
+============================================================ */
+
+initialize();
+
+</script>
+
+
+</body>
+</html>
