@@ -1,0 +1,32 @@
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+*.egg-info/
+.pytest_cache/
+
+# Secretos y configuración local (NUNCA subir)
+.env
+Backend/.env
+*.pem
+*.key
+
+# Base de datos local (contiene datos de pacientes)
+*.db
+*.sqlite
+*.sqlite3
+
+
+# Datasets (NHAMCS, KTAS, etc.)
+data/
+*.csv
+
+# IDE / sistema
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
