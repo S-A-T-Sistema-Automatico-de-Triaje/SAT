@@ -59,17 +59,9 @@ def get_current_user(token: str = Depends(oauth2_scheme), db: Session = Depends(
     return user
 
 
-def require_roles(*roles: Iterable[RoleEnum]):
-    """
-    Dependency factory: uso -> Depends(require_roles(RoleEnum.administrador))
-    Deja pasar solo a los roles indicados. El Administrador y el Auditor clínico
-    suelen necesitar acceso amplio de lectura; ajustá según cada endpoint.
-    """
+def require_roles(*roles: RoleEnum):
     def checker(user: User = Depends(get_current_user)) -> User:
-        if user.role not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=f"Rol '{user.role.value}' no autorizado para esta acción",
-            )
+        if user.role not in roles and user.role != RoleEnum.administrador:
+            raise HTTPException(403, "No tenés permiso para esta acción")
         return user
     return checker

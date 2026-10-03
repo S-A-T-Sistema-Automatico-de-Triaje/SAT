@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriageAI — Vista del médico</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.q-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin:0 14px 6px;cursor:pointer;background:var(--surface2)}
+.q-item:hover,.q-item.active{border-color:var(--blue)}
+.q-item.urgent{border-left:3px solid var(--esi1-c)}
+.q-info{flex:1;min-width:0}.q-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.q-meta{font-size:11px;color:var(--dim)}.q-done{font-size:11px;color:var(--green)}
+.q-tools{padding:10px 20px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;align-items:center}
+.levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.level{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:12px;display:flex;flex-direction:column;gap:6px}
+.level .who{font-size:11px;color:var(--dim);font-weight:600}.level .note{font-size:12px;color:var(--muted);line-height:1.5}
+.level .row{display:flex;align-items:center;gap:10px}
+.level small{font-size:11px;color:var(--muted)}
+.review h3{font-size:13px;font-weight:600;margin-bottom:10px}
+.review-btns{display:flex;gap:8px;margin-bottom:10px}.review-btns .btn{flex:1}
+.picker{display:none;gap:8px;margin-bottom:10px;align-items:center}.picker.open{display:flex}
+.ep{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 14px var(--mono);cursor:pointer;border:2px solid var(--border2);background:var(--surface3);color:var(--muted)}
+.ep.sel{color:var(--c);border-color:var(--c);background:var(--bgc)}
+.review label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.review textarea{width:100%;height:84px;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:9px 11px;font:13px var(--sans);color:var(--text);line-height:1.5}
+.review textarea:focus{border-color:var(--blue);outline:none}
+.review .btn-primary{width:100%;margin-top:10px}
+.review .msg{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+.verdict{border-radius:9px;padding:12px 14px;font-size:13px;border:1px solid}
+.verdict.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4)}.verdict.adj{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4)}
+.verdict b{display:block;margin-bottom:4px}
+@media(max-width:720px){.levels{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo">T+</div>
+  <div><span class="header-title">TriageAI</span><span class="header-sub">— Revisión médica</span></div>
+  <div class="header-right">
+    <div class="status-pill"><div class="sdot sdot-wait" id="sdot"></div><span id="stext">Conectando...</span></div>
+    <div class="user-pill"><div class="user-avatar" id="user-avatar">--</div><span id="user-name">—</span>
+      <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión" aria-label="Cerrar sesión">⏻</button></div>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema"><span id="theme-icon">🌙</span></button>
+  </div>
+</header>
+
+<div class="layout">
+  <aside class="panel-left">
+    <div class="panel-head"><h2>Casos para revisar</h2><p>Los más graves aparecen primero</p></div>
+    <div class="q-tools">
+      <label><input type="checkbox" id="show-reviewed" onchange="loadQueue()"> Mostrar revisados</label>
+      <span id="q-count"></span>
+    </div>
+    <div id="queue"></div>
+  </aside>
+  <main class="panel-right" id="detail"><div class="empty">Elegí un caso de la cola para revisarlo.</div></main>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+requireRole("medico_guardia");
+let queue = [], selectedId = null, seen = null, review = { agrees: null, esi: null };
+
+const prio = c => c.esi_triagist ?? c.esi_model;
+
+async function loadQueue() {
+  try {
+    const rev = document.getElementById("show-reviewed").checked;
+    queue = await api(`/api/cases/queue?include_reviewed=${rev}`);
+    const pend = queue.filter(c => c.status === "pendiente_medico");
+    // Aviso de casos graves nuevos (ESI 1-2) desde la última carga
+    const ids = new Set(pend.map(c => c.classification_id));
+    const fresh = seen ? pend.filter(c => !seen.has(c.classification_id) && prio(c) <= 2) : [];
+    seen = ids;
+    setStatus(fresh.length ? "warn" : "ok", fresh.length ? `Nuevo caso ESI ${prio(fresh[0])}: ${fresh[0].display_name}` : `${pend.length} pendiente${pend.length !== 1 ? "s" : ""}`);
+    document.getElementById("q-count").textContent = `${pend.length} pendientes`;
+    renderQueue();
+  } catch (e) { setStatus("err", e.message); }
+}
+
+function renderQueue() {
+  const el = document.getElementById("queue");
+  if (!queue.length) { el.innerHTML = '<div class="empty">No hay casos pendientes.</div>'; return; }
+  el.innerHTML = queue.map(c => {
+    const done = c.status === "revisado";
+    return `<div class="q-item ${c.classification_id === selectedId ? "active" : ""} ${!done && prio(c) <= 2 ? "urgent" : ""}" onclick="openCase(${c.classification_id})">
+      ${esiBadge(done ? c.esi_final : prio(c))}
+      <div class="q-info"><div class="q-name">${esc(c.display_name)}</div>
+      <div class="q-meta">${done ? "" : `enviado ${timeAgo(c.submitted_at)}`}</div></div>
+      ${done ? '<span class="q-done">✓ revisado</span>' : ""}</div>`;
+  }).join("");
+}
+
+async function openCase(id) {
+  selectedId = id; review = { agrees: null, esi: null }; renderQueue();
+  const box = document.getElementById("detail");
+  box.innerHTML = '<div class="empty">Cargando caso...</div>';
+  try { renderDetail(await api(`/api/cases/${id}`)); }
+  catch (e) { box.innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
+}
+
+function renderDetail(d) {
+  const m = d.model, t = d.triagist, dr = d.doctor, conf = m.result?.confidence;
+  const pending = d.status === "pendiente_medico";
+  const levels = `<div class="levels">
+    <div class="level"><div class="who">Modelo</div><div class="row">${esiBadge(m.esi, "lg")}<small>${conf != null ? "confianza " + (conf * 100).toFixed(0) + "%" : ""}</small></div></div>
+    <div class="level"><div class="who">Triagista${t.username ? " · " + esc(t.username) : ""}</div><div class="row">${esiBadge(t.esi, "lg")}</div>
+      ${t.note ? `<div class="note">${esc(t.note)}</div>` : ""}</div>
+    <div class="level"><div class="who">Médico</div><div class="row">${esiBadge(dr.esi, "lg")}<small>${dr.esi ? "" : "sin revisar"}</small></div></div></div>`;
+
+  document.getElementById("detail").innerHTML = `
+    ${renderPatientSummary(d.case.patient_data, d.case.anon_code)}
+    ${levels}
+    ${renderSections(m.result)}
+    ${pending ? reviewForm(d) : verdictBox(d)}`;
+}
+
+function verdictBox(d) {
+  const dr = d.doctor;
+  if (d.status !== "revisado") return '<div class="empty">El triagista todavía no envió este caso.</div>';
+  return `<div class="verdict ${dr.agrees ? "ok" : "adj"}"><b>${dr.agrees ? "✓ Nivel confirmado" : "✎ Nivel cambiado"} · ESI ${dr.esi}</b>
+    ${dr.comment ? esc(dr.comment) : "Sin recomendaciones."}<div class="q-meta" style="margin-top:6px">${esc(dr.username || "")} · ${timeAgo(dr.reviewed_at)}</div></div>`;
+}
+
+function reviewForm(d) {
+  return `<div class="confirm-zone review"><h3>Tu revisión</h3>
+    <div class="review-btns">
+      <button class="btn btn-ok" id="b-agree" onclick="pickAgree(true)">✓ Estoy de acuerdo (ESI ${d.triagist.esi ?? d.model.esi})</button>
+      <button class="btn btn-adj" id="b-change" onclick="pickAgree(false)">✎ Cambiar nivel</button></div>
+    <div class="picker" id="picker"><span style="font-size:12px;color:var(--muted)">Nivel correcto:</span>
+      ${[1, 2, 3, 4, 5].map(n => `<div class="ep e-${n}" id="ep${n}" onclick="pickESI(${n})">${n}</div>`).join("")}</div>
+    <label for="comment">Recomendaciones para el paciente</label>
+    <textarea id="comment" placeholder="Indicaciones, estudios, derivación, pautas de alarma..."></textarea>
+    <button class="btn btn-primary" id="btn-send" onclick="sendReview(${d.classification_id}, ${d.triagist.esi ?? d.model.esi})">Guardar revisión</button>
+    <div class="msg" id="msg"></div></div>`;
+}
+
+function pickAgree(a) {
+  review.agrees = a; if (a) review.esi = null;
+  document.getElementById("b-agree").classList.toggle("sel", a);
+  document.getElementById("b-change").classList.toggle("sel", !a);
+  document.getElementById("picker").classList.toggle("open", !a);
+  [1, 2, 3, 4, 5].forEach(n => document.getElementById("ep" + n)?.classList.remove("sel"));
+}
+function pickESI(n) {
+  review.esi = n;
+  [1, 2, 3, 4, 5].forEach(i => document.getElementById("ep" + i).classList.toggle("sel", i === n));
+}
+
+async function sendReview(id, proposedEsi) {
+  const msg = document.getElementById("msg"), comment = document.getElementById("comment").value.trim();
+  msg.textContent = "";
+  if (review.agrees === null) { msg.textContent = "Indicá si estás de acuerdo o querés cambiar el nivel."; return; }
+  if (!review.agrees && !review.esi) { msg.textContent = "Elegí el nivel ESI correcto."; return; }
+  if (!review.agrees && !comment) { msg.textContent = "Explicá en las recomendaciones por qué cambiás el nivel."; return; }
+  const btn = document.getElementById("btn-send"); btn.disabled = true;
+  try {
+    await api(`/api/cases/${id}/review`, { method: "POST", body: { agrees: review.agrees, esi_final: review.agrees ? proposedEsi : review.esi, comment } });
+    await Promise.all([openCase(id), loadQueue()]);
+  } catch (e) { msg.textContent = e.message; btn.disabled = false; }
+}
+
+loadQueue();
+setInterval(loadQueue, 15000);
+</script>
+</body>
+</html>

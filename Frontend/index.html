@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriageAI — Ingresar</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+body{align-items:center;justify-content:center}
+.card{width:340px;max-width:92vw;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:28px 26px}
+.card .logo{width:44px;height:44px;font-size:16px;border-radius:10px;margin-bottom:14px}
+.card h1{font-size:17px;font-weight:600}.card .sub{font-size:12px;color:var(--muted);margin-bottom:20px}
+.card label{display:block;font-size:12px;color:var(--muted);font-weight:500;margin-bottom:4px}
+.card input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 11px;font:13px var(--sans);color:var(--text);margin-bottom:12px}
+.card input:focus{border-color:var(--blue);outline:none}
+.card .btn{width:100%;margin-top:4px}
+.err{display:none;background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);color:var(--red);border-radius:7px;padding:8px 11px;font-size:12px;margin-bottom:12px}
+.err.show{display:block}
+</style>
+</head>
+<body>
+<form class="card" onsubmit="return onSubmit(event)">
+  <div class="logo">T+</div>
+  <h1>TriageAI</h1>
+  <p class="sub">Ingresá con tu usuario del hospital</p>
+  <div class="err" id="err" role="alert"></div>
+  <label for="u">Usuario</label><input id="u" autocomplete="username" autofocus>
+  <label for="p">Contraseña</label><input id="p" type="password" autocomplete="current-password">
+  <button class="btn btn-primary" id="go">Ingresar</button>
+</form>
+<script src="js/common.js"></script>
+<script>
+// Si ya hay sesión guardada, ir directo a la pantalla del rol
+const u0 = getUser();
+if (getToken() && u0) location.replace(homeFor(u0.role));
+
+async function onSubmit(e) {
+  e.preventDefault();
+  const err = document.getElementById("err"), btn = document.getElementById("go");
+  const user = document.getElementById("u").value.trim(), pass = document.getElementById("p").value;
+  err.classList.remove("show");
+  if (!user || !pass) { err.textContent = "Completá usuario y contraseña."; err.classList.add("show"); return false; }
+  btn.disabled = true; btn.textContent = "Ingresando...";
+  try { await doLogin(user, pass); }
+  catch (ex) {
+    err.textContent = /fetch|Failed/i.test(ex.message) ? `No se pudo conectar con el servidor (${BACKEND_URL}).` : "Usuario o contraseña incorrectos.";
+    err.classList.add("show"); btn.disabled = false; btn.textContent = "Ingresar";
+  }
+  return false;
+}
+</script>
+</body>
+</html>

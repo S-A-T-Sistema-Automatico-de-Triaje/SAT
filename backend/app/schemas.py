@@ -1,14 +1,10 @@
+import datetime as dt
 from typing import Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from app.models import RoleEnum
 
 
-# ──────────────────────────────────────────────────────────
-# Espejo exacto del JSON pedido en el SYSTEM_PROMPT (app/prompts.py).
-# Si el modelo no cumple esta forma, Pydantic lo rechaza y lo tratamos
-# como "respuesta no estructurada" (mismo comportamiento que el try/catch del HTML).
-# ──────────────────────────────────────────────────────────
 class TreatmentItem(BaseModel):
     action: str
     priority: Literal["alta", "media", "baja"] = "media"
@@ -27,10 +23,9 @@ class ESIResult(BaseModel):
     confidence: float | None = None
 
 
-# ──────────────────────────────────────────────────────────
-# Datos del paciente (modo formulario estructurado)
-# ──────────────────────────────────────────────────────────
 class PatientData(BaseModel):
+    anonimo: bool = False  # NUEVO: si es True no se guardan nombre ni apellido
+
     nombre: Optional[str] = ""
     apellido: Optional[str] = ""
     edad: Optional[str] = ""
@@ -47,16 +42,16 @@ class PatientData(BaseModel):
     medicacion: Optional[str] = ""
     alergias: Optional[str] = ""
 
-    # NUEVO — campos clínicos para el modelo XGBoost
-    pain_score: Optional[str] = ""              # 0-10
-    pain_location: Optional[str] = ""            # una de las clases de options.pain_location
-    pain_unassessable: bool = False               # ej: lactante, paciente inconsciente
-    mental_status_triage: Optional[str] = ""      # "Alerta"/"Confundido"/etc (se traduce en model.py)
-    gcs_total: Optional[str] = ""                 # 3-15, opcional
+    pain_score: Optional[str] = ""
+    pain_location: Optional[str] = ""
+    pain_unassessable: bool = False
+    mental_status_triage: Optional[str] = ""
+    gcs_total: Optional[str] = ""
     weight_kg: Optional[str] = ""
     height_cm: Optional[str] = ""
-    chief_complaint_system: Optional[str] = ""    # categoría del motivo, NO el texto libre
-    comorbidities: list[str] = []                 # lista de keys hx_* marcadas (ej: ["hx_hypertension"])
+    chief_complaint_system: Optional[str] = ""
+    comorbidities: list[str] = []
+
 
 class ClassifyRequest(BaseModel):
     input_mode: Literal["form", "free"] = "form"
@@ -72,15 +67,48 @@ class ClassifyResponse(BaseModel):
     classification_id: int
     model_used: str
     result: ESIResult
+    is_anonymous: bool = False
+    anon_code: Optional[str] = None
+    status: str = "en_triaje"
 
 
 # ──────────────────────────────────────────────────────────
-# Confirmación / ajuste del triagista
+# Flujo triagista -> médico
 # ──────────────────────────────────────────────────────────
-class ConfirmRequest(BaseModel):
-    type: Literal["ok", "adj"]
-    esi_final: int = Field(ge=1, le=5)
+class TriagistSubmit(BaseModel):
+    esi_propuesto: int = Field(ge=1, le=5)
     note: Optional[str] = ""
+
+
+class DoctorReview(BaseModel):
+    agrees: bool
+    esi_final: int = Field(ge=1, le=5)
+    comment: str = ""  # recomendaciones para el paciente
+
+    @model_validator(mode="after")
+    def _coherencia(self):
+        if not self.agrees and not self.comment.strip():
+            raise ValueError("Si cambiás el nivel ESI, explicá el motivo en el comentario")
+        return self
+
+
+class IdentifyRequest(BaseModel):
+    nombre: str
+    apellido: str = ""
+
+
+class CaseSummary(BaseModel):
+    classification_id: int
+    case_id: int
+    display_name: str
+    is_anonymous: bool
+    esi_model: int
+    esi_triagist: Optional[int] = None
+    esi_final: Optional[int] = None
+    status: str
+    doctor_comment: Optional[str] = None
+    created_at: dt.datetime
+    submitted_at: Optional[dt.datetime] = None
 
 
 # ──────────────────────────────────────────────────────────

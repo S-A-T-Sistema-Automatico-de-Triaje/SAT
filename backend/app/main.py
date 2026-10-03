@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import Base, engine, SessionLocal
 from app.config import settings
-from app.models import User, RoleEnum
+from app.models import RoleEnum, User
 from app.auth import hash_password
 from app.routers import auth as auth_router
 from app.routers import classify as classify_router
@@ -30,28 +30,39 @@ app.include_router(cases_router.router)
 app.include_router(meta_router.router)
 
 
+# Usuarios iniciales: se crean al arrancar si no existen (solo los que falten).
+# ⚠️ Contraseñas de DESARROLLO. Cambiarlas antes de un uso real.
+DEMO_PASSWORD = "cambiar123"
+
+
+def _initial_users():
+    return [
+        (settings.seed_admin_username, "Administrador inicial", settings.seed_admin_password, RoleEnum.administrador),
+        ("triagista1", "Triagista de prueba", DEMO_PASSWORD, RoleEnum.triagista),
+        ("medico1", "Médico de prueba", DEMO_PASSWORD, RoleEnum.medico_guardia),
+    ]
+
+
 @app.on_event("startup")
 def on_startup():
     # Crea las tablas si no existen (para algo más robusto, migrar a Alembic más adelante)
     Base.metadata.create_all(bind=engine)
 
-    # Siembra un usuario Administrador inicial si la tabla de usuarios está vacía,
-    # para poder crear al resto de los usuarios (Triagista, Médico de guardia, etc.) desde /api/auth/users
     db = SessionLocal()
     try:
-        if db.query(User).count() == 0:
-            admin = User(
-                username=settings.seed_admin_username,
-                full_name="Administrador inicial",
-                hashed_password=hash_password(settings.seed_admin_password),
-                role=RoleEnum.administrador,
-            )
-            db.add(admin)
+        created = []
+        for username, full_name, password, role in _initial_users():
+            if not db.query(User).filter(User.username == username).first():
+                db.add(User(
+                    username=username,
+                    full_name=full_name,
+                    hashed_password=hash_password(password),
+                    role=role,
+                ))
+                created.append(username)
+        if created:
             db.commit()
-            print(
-                f"⚠️  Usuario admin creado: '{settings.seed_admin_username}' / "
-                f"'{settings.seed_admin_password}' — CAMBIAR la contraseña cuanto antes."
-            )
+            print(f"⚠️  Usuarios iniciales creados: {', '.join(created)} — CAMBIAR las contraseñas cuanto antes.")
     finally:
         db.close()
 

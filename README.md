@@ -1,4 +1,4 @@
-# SAT
+## SAT
 
 Sistema de triaje hospitalario asistido por IA, clasificando pacientes según la escala **ESI** (Emergency Severity Index, niveles 1-5). Corre 100% **on-premise**: ningún dato de paciente sale de la red del hospital, la inferencia se hace localmente con un modelo **CatBoost** entrenado específicamente para triaje.
 
@@ -9,7 +9,8 @@ Sistema de triaje hospitalario asistido por IA, clasificando pacientes según la
 ```
 SAT/
 ├── Backend/     → API FastAPI: auth, clasificación (CatBoost), historial, auditoría
-├── Frontend/    → Interfaz web (HTML/JS) para Triagista
+├── Frontend/    → Interfaz web (HTML/JS): login, vista del Triagista y vista del Médico
+├── run.py       → Lanzador: levanta Backend + Frontend y abre el navegador
 ├── requieremnts.txt
 ├── Documento/   → Aqui ira La Documentacion del Proyecto
 └── README.md
@@ -18,9 +19,10 @@ SAT/
 ```
 Backend/app/
 ├── auth.py, config.py, database.py, models.py, schemas.py, prompts.py, main.py
+(Backend/seed_users.py → crea los usuarios iniciales: admin, triagista y médico)
 ├── routers/
 │   ├── auth.py       → login, alta de usuarios
-│   ├── cases.py       → historial, confirmación/ajuste del triagista
+│   ├── cases.py       → flujo triagista → médico: enviar, cola, revisión, identificar anónimos, historial
 │   ├── classify.py    → clasificación ESI
 │   └── meta.py         → opciones válidas para el formulario (categorías del modelo)
 └── ml/
@@ -30,10 +32,19 @@ Backend/app/
         └── triage_catboost_model.joblib
 ```
 
+```
+Frontend/
+├── index.html      → login; redirige a la pantalla según el rol
+├── triage.html     → vista del Triagista (formulario, clasificación, envío al médico, "Mis casos")
+├── medico.html     → vista del Médico (cola por gravedad, detalle, revisión y recomendaciones)
+├── css/styles.css  → tokens de color, tema claro/oscuro y componentes compartidos
+└── js/common.js    → sesión, llamadas a la API y bloques de render compartidos
+```
+
 El Frontend nunca corre el modelo directamente: todo pasa por el Backend, que arma la fila de features, ejecuta la clasificación, y persiste cada resultado para trazabilidad.
 
 ```
-Triagista (navegador, login con JWT)
+Triagista / Médico (navegador, login con JWT)
         │  HTTP + JWT
         ▼
    Backend (FastAPI, :8000)
@@ -49,7 +60,17 @@ Triagista (navegador, login con JWT)
 
 ## Puesta en marcha
 
-Se necesitan **2 procesos corriendo en paralelo** (antes eran 3: Ollama ya no es necesario), cada uno en su propia terminal.
+### Arranque rápido
+
+Desde la raíz del proyecto, una vez hecha la configuración del Backend (paso 1):
+
+```powershell
+python run.py              # Backend (:8000) + Frontend (:8080) y abre el navegador
+python run.py --reload     # Backend con autorecarga (desarrollo)
+python run.py --no-browser # no abre el navegador
+```
+
+`Ctrl+C` detiene ambos procesos. Si preferís levantarlos a mano, se necesitan **2 procesos en paralelo** (antes eran 3: Ollama ya no es necesario), cada uno en su terminal, como se detalla abajo.
 
 ### 1. Backend
 
@@ -78,7 +99,17 @@ Colocar el modelo entrenado en `Backend/app/ml/artifacts/triage_catboost_model.j
 uvicorn app.main:app --reload --port 8000
 ```
 
-La primera vez crea las tablas y siembra un usuario Administrador (usuario/contraseña definidos en `.env`). Documentación interactiva: http://localhost:8000/docs
+La primera vez crea las tablas y siembra un usuario Administrador (usuario/contraseña definidos en `.env`) **solo si la tabla de usuarios está vacía**. Documentación interactiva: http://localhost:8000/docs
+
+**Usuarios iniciales.** Para crear además un Triagista y un Médico de prueba, corré una vez (con el venv activo, desde `Backend/`):
+
+```powershell
+python seed_users.py
+```
+
+Crea `admin` (credenciales del `.env`), `triagista1` y `medico1` (contraseña `cambiar123`, **cambiarla antes de un uso real**). Es idempotente: no duplica usuarios existentes. Para dar de alta más usuarios, el Administrador usa `POST /api/auth/users` desde `/docs`.
+
+> **Cambios de esquema:** el proyecto todavía no usa Alembic. Si cambian los modelos, hay que borrar `triageai.db` (se recrea al arrancar) y volver a correr `seed_users.py`, o escribir un `ALTER TABLE`.
 
 Detalle completo de la API en [`Backend/README.md`](Backend/README.md).
 
@@ -89,19 +120,36 @@ cd Frontend
 python -m http.server 8080
 ```
 
-Abrir **http://localhost:8080/triage_prototipo0.7.html** (no abrir el archivo directamente con `file://` — el CORS del backend solo permite `http://localhost:8080`). Pide login contra el Backend.
+Abrir **http://localhost:8080/index.html** (no abrir el archivo directamente con `file://`, y usar `localhost` y no `127.0.0.1` — el CORS del backend solo permite `http://localhost:8080`). Pide login contra el Backend y lleva a cada usuario a su pantalla según el rol.
 
 ## Roles
 
+El flujo de trabajo se centra en dos roles: **Triagista** y **Médico**.
+
 | Rol | Puede |
 |---|---|
-| `triagista` | Ingresar el caso, ver la clasificación sugerida por el modelo, confirmar o ajustar el nivel ESI |
-| `medico_guardia` | Ver el detalle completo del caso y la historia previa del paciente, confirmar si corresponde la prioridad asignada |
-| `jefe_enfermeria` | Ver historial y métricas del turno |
-| `administrador` | Gestionar usuarios |
-| `auditor_clinico` | Solo lectura, para trazabilidad |
+| `triagista` | Cargar el caso (con nombre o anónimo), ver la clasificación del modelo, proponer su nivel ESI con una nota y enviarlo al médico; ver el estado y el veredicto de sus casos; identificar casos anónimos |
+| `medico_guardia` | Ver la cola de casos pendientes (más graves primero), revisar los tres niveles ESI (modelo, triagista, propio), confirmar o cambiar el nivel y dejar recomendaciones para el paciente |
+| `administrador` | Gestionar usuarios y ver el historial completo |
+| `jefe_enfermeria` | Ver el historial completo (sin pantalla propia todavía) |
+| `auditor_clinico` | Solo lectura, para trazabilidad (sin pantalla propia todavía) |
 
-> Los roles están en revisión: se está evaluando simplificar el flujo a solo **Triagista** (sugiere prioridad) y **Médico** (revisa el caso completo, ve si el paciente ya vino antes, y confirma la prioridad).
+## Flujo de trabajo
+
+```
+Triagista                      Modelo CatBoost                Médico
+─────────                      ───────────────                ──────
+Carga datos (con nombre
+o anónimo)              ──►    Sugiere ESI + confianza
+Propone su ESI + nota   ──►    estado: pendiente_medico  ──►  Ve la cola, abre el caso
+                                                              ¿Coincide el ESI? Sí / No
+Ve el veredicto         ◄──    estado: revisado          ◄──  Deja recomendaciones
+```
+
+- Cada caso guarda **tres niveles ESI**: el del modelo, el del triagista y el final del médico. Sirve para medir cuánto acierta el modelo y cuánto se corrige.
+- Estados de una clasificación: `en_triaje` (el modelo clasificó, aún sin enviar), `pendiente_medico` y `revisado`.
+- **Casos anónimos:** si no se completan nombre ni apellido, el caso se registra como anónimo con un código `ANON-AAAAMMDD-NNNN`. No se guarda ningún nombre, y puede identificarse después sin perder el código original.
+- Si el médico cambia el nivel ESI, debe explicar el motivo en el comentario.
 
 ## Modelo de IA
 
@@ -119,15 +167,21 @@ Abrir **http://localhost:8080/triage_prototipo0.7.html** (no abrir el archivo di
 
 ## Estado del proyecto
 
-- [x] Backend funcional: auth por rol, clasificación vía CatBoost local, confirmación del triagista, historial persistente
+- [x] Backend funcional: auth por rol, clasificación vía CatBoost local, flujo triagista → médico, historial persistente
 - [x] Frontend migrado para hablar con el Backend (login JWT real, formulario ampliado con campos clínicos para el modelo)
+- [x] Frontend separado por rol: login, vista del Triagista y vista del Médico
+- [x] Casos anónimos automáticos (sin nombre) con identificación posterior
+- [x] Lanzador `run.py` y script de usuarios iniciales `seed_users.py`
 - [x] Migración de Ollama a XGBoost, y luego de XGBoost a CatBoost: sin dependencia de LLM ni GPU para clasificar
 - [x] `age_group`, `site_id` y las categorías de dolor/motivo confirmadas contra el dataset real de entrenamiento
-- [ ] Traducción al español de las categorías de `pain_location` y `chief_complaint_system` (hoy se muestran en inglés, tal cual las conoce el modelo)
-- [ ] Simplificar roles a Triagista / Médico, con historial de paciente reincidente
+- [x] Traducción al español de las categorías de `pain_location` y `chief_complaint_system`
+- [x] Simplificar roles a Triagista / Médico
+- [ ] Historial de paciente reincidente (buscar visitas previas por nombre/DNI)
+- [ ] "Tomar caso" en la vista del Médico, para evitar que dos médicos revisen el mismo paciente
+- [ ] Actualizar `Backend/README.md` con los endpoints nuevos (`/submit`, `/review`, `/queue`, `/mine`, `/identify`)
+- [ ] Alojar localmente las fuentes (hoy se cargan desde Google Fonts, y sin internet caen a la fuente del sistema)
 - [ ] Panel de administración de usuarios en el Frontend (hoy se gestiona por `/docs`)
 - [ ] Confirmar el supuesto de "aire ambiente" usado en el cálculo de `news2_score` contra el pipeline de entrenamiento
-- [ ] Historial de sesión persistente entre recargas de página (hoy se resetea al refrescar el navegador; los casos sí quedan guardados en la base, pero el Frontend no los vuelve a traer)
 - [ ] Capturar los campos administrativos hoy diferidos (modo de llegada, cobertura, visitas previas) cuando exista el módulo de admisión
 - [ ] Incorporar señal del texto libre del motivo de consulta al modelo (vectorización) para mejorar el accuracy
 - [ ] Migraciones de base de datos con Alembic

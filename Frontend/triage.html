@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TriageAI — Triaje</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<style>
+.form-body{padding:16px 20px;flex:1}
+.fs{margin-bottom:18px}.fs-label{font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.fs-label::after{content:'';flex:1;height:1px;background:var(--border)}
+.field{display:flex;flex-direction:column;gap:4px}.field label{font-size:11px;color:var(--muted);font-weight:500}
+.field input,.field select,.field textarea,.inline-in{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font:13px var(--sans);color:var(--text);width:100%}
+.field input:focus,.field select:focus,.field textarea:focus,.inline-in:focus{border-color:var(--blue);outline:none}
+.field textarea{resize:none;height:58px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mb{margin-bottom:8px}
+.v-warn{border-color:var(--amber)!important;background:rgba(245,158,11,.07)!important}.v-crit{border-color:var(--red)!important;background:rgba(239,68,68,.08)!important}
+.hint{font-size:11px;color:var(--muted);margin-top:8px;padding:6px 10px;border-radius:6px;background:rgba(167,139,250,.12)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}.chips label{cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted)}
+.foot{padding:14px 20px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface)}
+.foot .btn{width:100%}.foot .btn-clear{margin-top:6px;background:transparent;font-weight:500;font-size:12px;color:var(--muted)}
+.tc{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:9px;padding:12px 16px;margin-bottom:12px}
+.tc div{font-size:13px;margin-top:4px}.pr{font-size:10px;font-weight:600;margin-left:6px;padding:1px 6px;border-radius:4px;background:var(--surface3);color:var(--muted)}
+.meta{font-size:11px;color:var(--dim);margin-bottom:12px}
+.send h3{font-size:13px;font-weight:600;margin-bottom:4px}.send p{font-size:12px;color:var(--muted);margin-bottom:10px}
+.picker{display:flex;gap:8px;margin-bottom:10px}
+.ep{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font:700 14px var(--mono);cursor:pointer;border:2px solid var(--border2);background:var(--surface3);color:var(--muted)}
+.ep.sel{color:var(--c);border-color:var(--c);background:var(--bgc)}
+.send textarea{width:100%;height:64px;resize:none;background:var(--surface);border:1px solid var(--border);border-radius:7px;padding:8px 11px;font:13px var(--sans);color:var(--text)}
+.send .btn-primary{width:100%;margin-top:10px}.msg{font-size:12px;color:var(--red);margin-top:8px;min-height:16px}
+.verdict{border-radius:9px;padding:12px 14px;font-size:13px;border:1px solid;margin-top:12px}.verdict b{display:block;margin-bottom:4px}
+.verdict.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4)}.verdict.adj{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4)}
+.verdict.wait{background:var(--surface2);border-color:var(--border)}
+.ident{display:flex;gap:8px;margin-top:12px}.ident input{flex:1}
+.hist{margin-top:24px}.hist h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px}
+.h-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;background:var(--surface2)}
+.h-item:hover,.h-item.active{border-color:var(--blue)}.h-name{flex:1;font-size:13px;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.h-st{font-size:11px;color:var(--muted);white-space:nowrap}.h-st.ok{color:var(--green)}.h-st.adj{color:var(--amber)}
+</style>
+</head>
+<body>
+<header class="header">
+  <div class="logo">T+</div>
+  <div><span class="header-title">TriageAI</span><span class="header-sub">— Triaje</span></div>
+  <div class="header-right">
+    <div class="status-pill"><div class="sdot sdot-wait" id="sdot"></div><span id="stext">Conectando...</span></div>
+    <div class="user-pill"><div class="user-avatar" id="user-avatar">--</div><span id="user-name">—</span>
+      <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión" aria-label="Cerrar sesión">⏻</button></div>
+    <button class="theme-toggle" onclick="toggleTheme()" aria-label="Cambiar tema"><span id="theme-icon">🌙</span></button>
+  </div>
+</header>
+
+<div class="layout">
+<aside class="panel-left">
+  <div class="panel-head"><h2>Datos del paciente</h2><p>Completá la información clínica para clasificar</p></div>
+  <div class="form-body">
+    <div class="fs"><div class="fs-label">Identificación</div>
+      <div class="g2 mb"><div class="field"><label for="nombre">Nombre</label><input id="nombre" oninput="updateHint()"></div>
+        <div class="field"><label for="apellido">Apellido</label><input id="apellido" oninput="updateHint()"></div></div>
+      <div class="g2"><div class="field"><label for="edad">Edad</label><input type="number" id="edad" min="0" max="130" placeholder="años"></div>
+        <div class="field"><label for="sexo">Sexo</label><select id="sexo"><option value="">Seleccionar</option><option>Masculino</option><option>Femenino</option><option>Otro</option></select></div></div>
+      <div class="hint" id="anon-hint">Sin nombre ni apellido, el caso se registra como <b>anónimo</b>. Podés identificarlo después.</div></div>
+
+    <div class="fs"><div class="fs-label">Signos vitales</div><div class="g2">
+      <div class="field"><label for="fc">FC (bpm)</label><input type="number" id="fc" placeholder="80" oninput="checkVitals()"></div>
+      <div class="field"><label for="pa_s">PA sistólica</label><input type="number" id="pa_s" placeholder="120" oninput="checkVitals()"></div>
+      <div class="field"><label for="pa_d">PA diastólica</label><input type="number" id="pa_d" placeholder="80"></div>
+      <div class="field"><label for="spo2">SpO₂ (%)</label><input type="number" id="spo2" placeholder="98" oninput="checkVitals()"></div>
+      <div class="field"><label for="fr">FR (rpm)</label><input type="number" id="fr" placeholder="16"></div>
+      <div class="field"><label for="temp">Temp (°C)</label><input type="number" id="temp" step="0.1" placeholder="36.5" oninput="checkVitals()"></div></div></div>
+
+    <div class="fs"><div class="fs-label">Cuadro clínico</div>
+      <div class="field mb"><label for="motivo">Motivo de consulta</label><textarea id="motivo" placeholder="Motivo principal de consulta..."></textarea></div>
+      <div class="field"><label for="sintomas">Síntomas asociados</label><textarea id="sintomas" placeholder="Ej: sudoración fría, náuseas, mareo..."></textarea></div></div>
+
+    <div class="fs"><div class="fs-label">Dolor</div><div class="g2">
+      <div class="field"><label for="pain_score">Intensidad (0-10)</label><input type="number" id="pain_score" min="0" max="10"></div>
+      <div class="field"><label for="pain_location">Ubicación</label><select id="pain_location"><option value="">Seleccionar</option></select></div></div>
+      <label style="display:flex;gap:6px;margin-top:8px;font-size:12px;color:var(--muted)"><input type="checkbox" id="pain_unassessable"> No se puede evaluar (lactante, inconsciente, etc.)</label></div>
+
+    <div class="fs"><div class="fs-label">Estado neurológico</div><div class="g2">
+      <div class="field"><label for="mental_status_triage">Estado mental</label><select id="mental_status_triage"><option value="">Seleccionar</option></select></div>
+      <div class="field"><label for="gcs_total">GCS total (3-15)</label><input type="number" id="gcs_total" min="3" max="15"></div></div></div>
+
+    <div class="fs"><div class="fs-label">Antropometría</div><div class="g2">
+      <div class="field"><label for="weight_kg">Peso (kg)</label><input type="number" id="weight_kg"></div>
+      <div class="field"><label for="height_cm">Altura (cm)</label><input type="number" id="height_cm"></div></div></div>
+
+    <div class="fs"><div class="fs-label">Categoría del motivo</div><div class="field"><select id="chief_complaint_system" aria-label="Categoría del motivo"><option value="">Seleccionar</option></select></div></div>
+
+    <div class="fs"><div class="fs-label">Antecedentes</div>
+      <div class="field mb"><label for="antecedentes">Antecedentes (texto libre, solo registro)</label><textarea id="antecedentes" placeholder="Ej: HTA, diabetes..."></textarea></div>
+      <div class="g2 mb"><div class="field"><label for="medicacion">Medicación</label><input id="medicacion"></div>
+        <div class="field"><label for="alergias">Alergias</label><input id="alergias"></div></div>
+      <div class="field"><label>Comorbilidades (las usa el modelo)</label><div class="chips" id="comorbidities"></div></div></div>
+  </div>
+  <div class="foot">
+    <div class="msg" id="form-msg" role="alert"></div>
+    <button class="btn btn-primary" id="btn-classify" onclick="classify()">Clasificar</button>
+    <button class="btn btn-clear" onclick="clearAll()">Limpiar formulario</button>
+  </div>
+</aside>
+
+<main class="panel-right">
+  <div id="detail"><div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.</div></div>
+  <div class="hist"><h3>Mis casos</h3><div id="mine"></div></div>
+</main>
+</div>
+
+<script src="js/common.js"></script>
+<script>
+requireRole("triagista");
+const $ = id => document.getElementById(id);
+let mine = [], selectedId = null, pickedEsi = null;
+const FIELDS = ["nombre","apellido","edad","sexo","fc","pa_s","pa_d","spo2","fr","temp","motivo","sintomas","antecedentes","medicacion","alergias","pain_score","pain_location","mental_status_triage","gcs_total","weight_kg","height_cm","chief_complaint_system"];
+
+// ── Arranque ─────────────────────────────────────────────
+(async function init() {
+  try { await api("/api/health"); setStatus("ok", "Backend conectado"); } catch { setStatus("err", "Sin conexión con el backend"); }
+  loadFormOptions(); loadMine(); setInterval(loadMine, 20000);
+})();
+
+async function loadFormOptions() {
+  try {
+    const o = await api("/api/meta/form-options");
+    for (const id of ["pain_location", "mental_status_triage", "chief_complaint_system"]) {
+      (o[id] || []).forEach(v => { const op = document.createElement("option");
+        op.value = typeof v === "object" ? v.value : v; op.textContent = typeof v === "object" ? v.label : v; $(id).appendChild(op); });
+    }
+    $("comorbidities").innerHTML = (o.comorbidities || []).map(c => `<label><input type="checkbox" value="${esc(c.key)}" class="cm">${esc(c.label)}</label>`).join("");
+  } catch (e) { setStatus("err", "No se cargaron las opciones: " + e.message); }
+}
+
+// ── Formulario ───────────────────────────────────────────
+const isAnon = () => !$("nombre").value.trim() && !$("apellido").value.trim();
+function updateHint() { $("anon-hint").style.display = isAnon() ? "block" : "none"; }
+
+function checkVitals() {
+  ["fc", "pa_s", "spo2", "temp"].forEach(id => {
+    const c = vitalClass($(id).value, id);
+    $(id).classList.toggle("v-warn", c === "ps-vital-warn"); $(id).classList.toggle("v-crit", c === "ps-vital-crit");
+  });
+}
+
+function getPatientData() {
+  const pd = { anonimo: isAnon(), pain_unassessable: $("pain_unassessable").checked,
+    comorbidities: [...document.querySelectorAll(".cm:checked")].map(c => c.value) };
+  FIELDS.forEach(id => pd[id] = $(id).value.trim());
+  return pd;
+}
+
+function resetForm() {
+  FIELDS.forEach(id => $(id).value = "");
+  $("pain_unassessable").checked = false; document.querySelectorAll(".cm").forEach(c => c.checked = false);
+  $("form-msg").textContent = ""; checkVitals(); updateHint();
+}
+function clearAll() { resetForm(); selectedId = null; $("detail").innerHTML = '<div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.</div>'; renderMine(); }
+
+// ── Clasificar ───────────────────────────────────────────
+async function classify() {
+  const pd = getPatientData(), msg = $("form-msg"); msg.textContent = "";
+  if (!pd.motivo) { msg.textContent = "Completá el motivo de consulta."; $("motivo").focus(); return; }
+  const btn = $("btn-classify"); btn.disabled = true; btn.textContent = "Clasificando...";
+  setStatus("warn", "Clasificando...");
+  try {
+    const r = await api("/api/classify", { method: "POST", body: { input_mode: "form", patient_data: pd } });
+    await openCase(r.classification_id); loadMine(); setStatus("ok", "Clasificación lista: revisá y enviá al médico");
+  } catch (e) { $("detail").innerHTML = `<div class="err-box"><b>Error:</b> ${esc(e.message)}</div>`; setStatus("err", "Error al clasificar"); }
+  btn.disabled = false; btn.textContent = "Clasificar";
+}
+
+// ── Detalle de un caso ───────────────────────────────────
+async function openCase(id) {
+  selectedId = id; renderMine();
+  try { showCase(await api(`/api/cases/${id}`)); } catch (e) { $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
+}
+
+function showCase(d) {
+  const r = d.model.result || {}, c = d.case, tr = r.treatment || [];
+  pickedEsi = d.triagist.esi || d.model.esi;
+  $("detail").innerHTML = `
+    ${renderPatientSummary(c.patient_data, c.is_anonymous ? c.anon_code : null)}
+    ${renderESICard(d.model.esi, "Sugerido por el modelo")}
+    ${r.confidence != null ? `<div class="meta">Confianza del modelo: ${(r.confidence * 100).toFixed(1)}%</div>` : ""}
+    ${renderSections(r)}
+    ${tr.length ? `<div class="tc"><div class="rs-title">Seguimiento sugerido</div>${tr.map(t => `<div>${esc(t.action)}<span class="pr">${esc(t.priority)}</span></div>`).join("")}</div>` : ""}
+    ${d.status === "en_triaje" ? sendZone(d) : statusBox(d)}
+    ${c.is_anonymous ? `<div class="ident"><input class="inline-in" id="id-n" placeholder="Nombre" aria-label="Nombre"><input class="inline-in" id="id-a" placeholder="Apellido" aria-label="Apellido"><button class="btn" onclick="identify(${d.classification_id})">Identificar</button></div><div class="msg" id="id-msg"></div>` : ""}`;
+}
+
+function sendZone(d) {
+  return `<div class="confirm-zone send"><h3>Tu decisión como triagista</h3><p>El modelo sugiere ESI ${d.model.esi}. Elegí el nivel que le proponés al médico.</p>
+    <div class="picker">${[1,2,3,4,5].map(n => `<div class="ep e-${n} ${n === pickedEsi ? "sel" : ""}" id="ep${n}" onclick="pickEsi(${n})">${n}</div>`).join("")}</div>
+    <textarea id="tnote" placeholder="Nota para el médico (opcional)..."></textarea>
+    <button class="btn btn-primary" id="btn-send" onclick="sendToDoctor(${d.classification_id})">Enviar al médico</button><div class="msg" id="smsg"></div></div>`;
+}
+function pickEsi(n) { pickedEsi = n; [1,2,3,4,5].forEach(i => $("ep" + i).classList.toggle("sel", i === n)); }
+
+function statusBox(d) {
+  const t = d.triagist, dr = d.doctor;
+  if (d.status === "pendiente_medico") return `<div class="verdict wait"><b>Esperando revisión médica</b>Propusiste ESI ${t.esi}${t.note ? " · " + esc(t.note) : ""}</div>`;
+  return `<div class="verdict ${dr.agrees ? "ok" : "adj"}"><b>${dr.agrees ? "✓ Nivel confirmado" : "✎ El médico cambió el nivel"} · ESI ${dr.esi}</b>
+    ${dr.comment ? esc(dr.comment) : "Sin recomendaciones."}<div class="meta" style="margin:6px 0 0">${esc(dr.username || "")} · ${timeAgo(dr.reviewed_at)}</div></div>`;
+}
+
+async function sendToDoctor(id) {
+  const btn = $("btn-send"); btn.disabled = true;
+  try {
+    await api(`/api/cases/${id}/submit`, { method: "POST", body: { esi_propuesto: pickedEsi, note: $("tnote").value.trim() } });
+    resetForm(); await Promise.all([openCase(id), loadMine()]); setStatus("ok", "Caso enviado al médico");
+  } catch (e) { $("smsg").textContent = e.message; btn.disabled = false; }
+}
+
+async function identify(id) {
+  const n = $("id-n").value.trim(), a = $("id-a").value.trim();
+  if (!n) { $("id-msg").textContent = "Falta el nombre."; return; }
+  try { await api(`/api/cases/${id}/identify`, { method: "PATCH", body: { nombre: n, apellido: a } }); await Promise.all([openCase(id), loadMine()]); }
+  catch (e) { $("id-msg").textContent = e.message; }
+}
+
+// ── Mis casos (persistente: viene del backend) ───────────
+async function loadMine() { try { mine = await api("/api/cases/mine"); renderMine(); } catch (e) { setStatus("err", e.message); } }
+
+function renderMine() {
+  $("mine").innerHTML = mine.length ? mine.map(c => {
+    const changed = c.status === "revisado" && c.esi_triagist && c.esi_final !== c.esi_triagist;
+    const st = { en_triaje: ["sin enviar", ""], pendiente_medico: ["esperando médico", ""], revisado: [changed ? `✎ cambió a ESI ${c.esi_final}` : "✓ confirmado", changed ? "adj" : "ok"] }[c.status];
+    return `<div class="h-item ${c.classification_id === selectedId ? "active" : ""}" onclick="openCase(${c.classification_id})">
+      ${esiBadge(c.esi_final || c.esi_triagist || c.esi_model)}<div class="h-name">${esc(c.display_name)}</div><span class="h-st ${st[1]}">${st[0]}</span></div>`;
+  }).join("") : '<div class="empty">Todavía no cargaste casos.</div>';
+}
+</script>
+</body>
+</html>
