@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.database import Base, engine, SessionLocal
 from app.config import settings
 from app.models import RoleEnum, User
-from app.auth import hash_password
+from app.security import hash_password
 from app.routers import auth as auth_router
 from app.routers import classify as classify_router
 from app.routers import cases as cases_router
