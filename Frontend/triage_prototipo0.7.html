@@ -1022,10 +1022,35 @@ function renderResult(r, container, withConfirm = false, pd = null) {
     const vColor = (val, type) => {
       if (!val) return "ps-vital-ok";
       const n = +val;
-      if (type==="fc")   return n>150||n<40 ? "ps-vital-crit" : n>100||n<50 ? "ps-vital-warn" : "ps-vital-ok";
-      if (type==="pa_s") return n<90 ? "ps-vital-crit" : n<100 ? "ps-vital-warn" : "ps-vital-ok";
-      if (type==="spo2") return n<90 ? "ps-vital-crit" : n<94  ? "ps-vital-warn" : "ps-vital-ok";
-      if (type==="temp") return n>39 ? "ps-vital-crit" : n>37.5 ? "ps-vital-warn" : "ps-vital-ok";
+    
+      if (type === "fc")
+        return n < 40 || n > 130
+          ? "ps-vital-crit"
+          : n < 60 || n > 100
+            ? "ps-vital-warn"
+            : "ps-vital-ok";
+
+      if (type === "pa_s")
+        return n < 90 || n >= 180
+          ? "ps-vital-crit"
+          : n < 100 || n >= 130
+            ? "ps-vital-warn"
+            : "ps-vital-ok";
+
+      if (type === "spo2")
+        return n < 90
+          ? "ps-vital-crit"
+          : n < 95
+            ? "ps-vital-warn"
+            : "ps-vital-ok";
+
+      if (type === "temp")
+        return n < 35 || n > 39
+          ? "ps-vital-crit"
+          : n < 36 || n > 37.5
+            ? "ps-vital-warn"
+            : "ps-vital-ok";
+
       return "ps-vital-ok";
     };
     const vital = (val, lbl, type) => val ? `<div class="ps-vital ${vColor(val, type)}"><div class="ps-vital-val">${esc(val)}</div><div class="ps-vital-lbl">${lbl}</div></div>` : "";

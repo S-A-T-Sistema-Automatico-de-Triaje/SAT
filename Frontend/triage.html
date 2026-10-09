@@ -136,12 +136,26 @@ async function loadFormOptions() {
 const isAnon = () => !$("nombre").value.trim() && !$("apellido").value.trim();
 function updateHint() { $("anon-hint").style.display = isAnon() ? "block" : "none"; }
 
+
 function checkVitals() {
-  ["fc", "pa_s", "spo2", "temp"].forEach(id => {
-    const c = vitalClass($(id).value, id);
-    $(id).classList.toggle("v-warn", c === "ps-vital-warn"); $(id).classList.toggle("v-crit", c === "ps-vital-crit");
+  const ids = ["fc", "pa_s", "spo2", "temp"];
+  let hayCritico = false;
+
+  ids.forEach(id => {
+    const input = $(id);
+    const c = vitalClass(input.value, id);
+
+    input.classList.toggle("v-warn", c === "ps-vital-warn");
+    input.classList.toggle("v-crit", c === "ps-vital-crit");
+
+    if (c === "ps-vital-crit") {
+      hayCritico = true;
+    }
   });
+
+  $("btn-classify").disabled = hayCritico;
 }
+
 
 function getPatientData() {
   const pd = { anonimo: isAnon(), pain_unassessable: $("pain_unassessable").checked,
