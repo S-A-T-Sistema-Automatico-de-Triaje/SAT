@@ -678,18 +678,18 @@ body {
         <div class="fs-label">Signos vitales</div>
         <div class="grid2">
           <div class="field"><label>FC (bpm)</label>
-            <div class="vital-wrap"><input type="number" id="fc" placeholder="80" oninput="checkVitals()"><span class="vital-badge" id="fc-badge"></span></div>
+            <div class="vital-wrap"><input  type="number" id="fc" placeholder="80" min="0" max="240" required oninput="checkVitals()"><span class="vital-badge" id="fc-badge"></span></div>
           </div>
           <div class="field"><label>PA sistólica</label>
-            <div class="vital-wrap"><input type="number" id="pa_s" placeholder="120" oninput="checkVitals()"><span class="vital-badge" id="pas-badge"></span></div>
+            <div class="vital-wrap"><input min="0" required type="number" id="pa_s" placeholder="120" oninput="checkVitals()"><span class="vital-badge" id="pas-badge"></span></div>
           </div>
-          <div class="field"><label>PA diastólica</label><input type="number" id="pa_d" placeholder="80"></div>
+          <div class="field"><label>PA diastólica</label><input min="0" required type="number" id="pa_d" placeholder="80"></div>
           <div class="field"><label>SpO₂ (%)</label>
-            <div class="vital-wrap"><input type="number" id="spo2" placeholder="98" oninput="checkVitals()"><span class="vital-badge" id="spo2-badge"></span></div>
+            <div class="vital-wrap"><input min="0" required type="number" id="spo2" placeholder="98" oninput="checkVitals()"><span class="vital-badge" id="spo2-badge"></span></div>
           </div>
-          <div class="field"><label>FR (rpm)</label><input type="number" id="fr" placeholder="16"></div>
+          <div class="field"><label>FR (rpm)</label><input min="0" required type="number" id="fr" placeholder="16"></div>
           <div class="field"><label>Temp (°C)</label>
-            <div class="vital-wrap"><input type="number" id="temp" placeholder="36.5" step="0.1" oninput="checkVitals()"><span class="vital-badge" id="temp-badge"></span></div>
+            <div class="vital-wrap"><input min="0" required type="number" id="temp" placeholder="36.5" step="0.1" oninput="checkVitals()"><span class="vital-badge" id="temp-badge"></span></div>
           </div>
         </div>
       </div>
@@ -913,6 +913,11 @@ function getCheckedComorbidities() {
 // ── VITALES (coloreo de campos) ─────────────────────────────
 function checkVitals() {
   const v = (id) => +document.getElementById(id)?.value || 0;
+  if (v("fc") < 0 || v("pa_s") < 0 || v("spo2") < 0 || v("temp") < 0) {
+    alert("Los valores de signos vitales no pueden ser negativos.");
+    document.getElementById("btn-classify").disabled = true;
+    return;
+  }
   const setV = (id, badgeId, cls, badgeText) => {
     const el = document.getElementById(id);
     if (!el) return;
