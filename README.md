@@ -19,7 +19,7 @@ SAT/
 ```
 Backend/app/
 ├── auth.py, config.py, database.py, models.py, schemas.py, prompts.py, main.py
-(Backend/seed_users.py → crea los usuarios iniciales: admin, triagista y médico)
+(En main.py → crea los usuarios iniciales: admin, triagista y médico)
 ├── routers/
 │   ├── auth.py       → login, alta de usuarios
 │   ├── cases.py       → flujo triagista → médico: enviar, cola, revisión, identificar anónimos, historial
@@ -129,8 +129,9 @@ El flujo de trabajo se centra en dos roles: **Triagista** y **Médico**.
 | Rol | Puede |
 |---|---|
 | `triagista` | Cargar el caso (con nombre o anónimo), ver la clasificación del modelo, proponer su nivel ESI con una nota y enviarlo al médico; ver el estado y el veredicto de sus casos; identificar casos anónimos |
-| `medico_guardia` | Ver la cola de casos pendientes (más graves primero), revisar los tres niveles ESI (modelo, triagista, propio), confirmar o cambiar el nivel y dejar recomendaciones para el paciente |
+| `medico` | Ver la cola de casos pendientes (más graves primero), revisar los tres niveles ESI (modelo, triagista, propio), confirmar o cambiar el nivel y dejar recomendaciones para el paciente |
 | `administrador` | Gestionar usuarios y ver el historial completo |
+Roles a Implementar a futuro:
 | `jefe_enfermeria` | Ver el historial completo (sin pantalla propia todavía) |
 | `auditor_clinico` | Solo lectura, para trazabilidad (sin pantalla propia todavía) |
 

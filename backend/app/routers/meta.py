@@ -12,7 +12,7 @@ import unicodedata
 from fastapi import APIRouter, Depends
 
 from app.ml.model import get_comorbidity_columns
-from app.auth import get_current_user
+from app.security import get_current_user
 from app.models import User
 
 router = APIRouter(prefix="/api/meta", tags=["meta"])

@@ -9,7 +9,7 @@ from app.schemas import ClassifyRequest, ClassifyResponse, ESIResult
 from app.prompts import build_prompt_from_form  # solo registro/trazabilidad
 from app.ml.model import classify_features
 from app.ml.narrative import build_narrative
-from app.auth import require_roles
+from app.security import require_roles
 
 router = APIRouter(prefix="/api", tags=["classify"])
 

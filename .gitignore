@@ -8,6 +8,7 @@ env/
 .pytest_cache/
 
 # Secretos y configuración local (NUNCA subir)
+env/
 .env
 Backend/.env
 *.pem
