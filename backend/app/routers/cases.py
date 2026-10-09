@@ -7,7 +7,7 @@ from sqlalchemy.orm import Session, joinedload
 from app.database import get_db
 from app.models import Classification, ClassificationStatus, RoleEnum, User
 from app.schemas import CaseSummary, DoctorReview, IdentifyRequest, TriagistSubmit
-from app.auth import get_current_user, require_roles
+from app.security import  get_current_user, require_roles
 
 router = APIRouter(prefix="/api/cases", tags=["cases"])
 
