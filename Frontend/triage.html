@@ -44,6 +44,16 @@
   <div class="logo">T+</div>
   <div><span class="header-title">TriageAI</span><span class="header-sub">— Triaje</span></div>
   <div class="header-right">
+    <button
+  type="button"
+  class="btn btn-cases"
+  id="btn-toggle-cases"
+  onclick="toggleCasesPanel()"
+  aria-expanded="false" button.querySelector(".cases-label").textContent =
+    isOpen ? "Ocultar casos" : "Mis casos";
+  aria-controls="cases-panel">
+  <span class="cases-label">Mis casos</span>
+</button>
     <div class="status-pill"><div class="sdot sdot-wait" id="sdot"></div><span id="stext">Conectando...</span></div>
     <div class="user-pill"><div class="user-avatar" id="user-avatar">--</div><span id="user-name">—</span>
       <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión" aria-label="Cerrar sesión">⏻</button></div>
@@ -51,7 +61,7 @@
   </div>
 </header>
 
-<div class="layout">
+<div class="layout" id="triage-layout">
 <aside class="panel-left">
   <div class="panel-head"><h2>Datos del paciente</h2><p>Completá la información clínica para clasificar</p></div>
   <div class="form-body">
@@ -102,7 +112,7 @@
   </div>
 </aside>
 
-<main class="panel-right">
+<main class="panel-right" id="cases-panel">
   <div id="detail"><div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.</div></div>
   <div class="hist"><h3>Mis casos</h3><div id="mine"></div></div>
 </main>
@@ -223,12 +233,28 @@ async function identify(id) {
 async function loadMine() { try { mine = await api("/api/cases/mine"); renderMine(); } catch (e) { setStatus("err", e.message); } }
 
 function renderMine() {
+const counter = document.getElementById("cases-count");
+if (counter) {
+    counter.textContent = mine.length;
+} 
   $("mine").innerHTML = mine.length ? mine.map(c => {
     const changed = c.status === "revisado" && c.esi_triagist && c.esi_final !== c.esi_triagist;
     const st = { en_triaje: ["sin enviar", ""], pendiente_medico: ["esperando médico", ""], revisado: [changed ? `✎ cambió a ESI ${c.esi_final}` : "✓ confirmado", changed ? "adj" : "ok"] }[c.status];
     return `<div class="h-item ${c.classification_id === selectedId ? "active" : ""}" onclick="openCase(${c.classification_id})">
       ${esiBadge(c.esi_final || c.esi_triagist || c.esi_model)}<div class="h-name">${esc(c.display_name)}</div><span class="h-st ${st[1]}">${st[0]}</span></div>`;
   }).join("") : '<div class="empty">Todavía no cargaste casos.</div>';
+}
+// Mostrar u ocultar el panel de casos
+function toggleCasesPanel() {
+    const panel = document.getElementById("cases-panel");
+    const button = document.getElementById("btn-toggle-cases");
+    const layout = document.getElementById("triage-layout");
+
+    const isOpen = panel.classList.toggle("is-open");
+
+    layout.classList.toggle("cases-visible", isOpen);
+
+    button.setAttribute("aria-expanded", String(isOpen));
 }
 </script>
 </body>

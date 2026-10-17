@@ -98,3 +98,61 @@ button{font-family:var(--sans)}
 .tag-anon{font-size:11px;background:rgba(167,139,250,.15);color:#A78BFA;border-radius:5px;padding:1px 7px;margin-left:6px}
 .empty,.err-box{font-size:13px;color:var(--muted);text-align:center;padding:24px}
 .err-box{background:rgba(239,68,68,.08);border:1px solid rgba(239,68,68,.3);border-radius:9px;color:var(--red);text-align:left}
+
+/* ========================================
+   Issue #15 - Panel de casos desplegable
+   ======================================== */
+
+/* Formulario principal: ancho completo */
+#triage-layout {
+    display: flex;
+    width: 100%;
+}
+
+/* El formulario aprovecha el espacio disponible */
+#triage-layout .panel-left {
+    flex: 1 1 0;
+    min-width: 0;
+    width: auto;
+}
+
+/* Panel de casos inicialmente oculto */
+#cases-panel {
+    display: none;
+    flex: 0 0 40%;
+    min-width: 0;
+}
+
+/* Mostrar panel cuando el usuario lo solicita */
+#cases-panel.is-open {
+    display: block;
+}
+
+/* Botón en la cabecera */
+.btn-cases {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+#cases-count {
+    background: var(--blue);
+    color: white;
+    border-radius: 12px;
+    padding: 2px 7px;
+    font-size: 11px;
+    font-weight: 600;
+}
+
+/* Adaptación para pantallas pequeñas */
+@media (max-width: 800px) {
+    #triage-layout {
+        flex-direction: column;
+    }
+
+    #cases-panel.is-open {
+        flex: none;
+        width: 100%;
+    }
+}
