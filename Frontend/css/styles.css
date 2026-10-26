@@ -156,3 +156,174 @@ button{font-family:var(--sans)}
         width: 100%;
     }
 }
+/* =====================================
+   Issue #15 - Formulario por etapas
+   ===================================== */
+
+.form-step[hidden] {
+    display: none !important;
+}
+
+.steps-nav {
+    display: flex;
+    gap: 8px;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.step-btn {
+    flex: 1;
+    min-width: 110px;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--surface2);
+    color: var(--muted);
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.step-btn.active {
+    background: var(--blue);
+    color: white;
+    border-color: var(--blue);
+}
+
+.step-btn:focus-visible {
+    outline: 2px solid var(--blue);
+    outline-offset: 2px;
+}
+
+/* Issue #15 - Controles de navegación */
+
+.step-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 8px;
+}
+
+.foot .step-actions .btn {
+    flex: 1;
+    width: auto;
+}
+
+.step-actions .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Ocultar los botones que no corresponden */
+.foot .btn[hidden] {
+    display: none !important;
+}
+
+/* Resumen de revisión */
+#review-summary {
+    margin-top: 16px;
+    display: grid;
+    gap: 8px;
+}
+
+.review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 20px;
+    padding: 10px 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 7px;
+    font-size: 12px;
+}
+
+.review-row strong {
+    color: var(--muted);
+}
+
+.review-row span {
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* =========================================
+   Issue #15 - Ficha clínica de revisión
+   ========================================= */
+
+#review-summary {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 18px;
+    align-items: start;
+}
+
+.review-section {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    min-width: 0;
+}
+
+.review-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 0 0 12px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+}
+
+.review-section .review-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 6px;
+}
+
+.review-section .review-row strong {
+    flex: 0 0 42%;
+}
+
+.review-section .review-row span {
+    flex: 1;
+    text-align: right;
+    overflow-wrap: anywhere;
+}
+
+/* Adaptación cuando el panel de casos está abierto */
+#triage-layout.cases-visible #review-summary {
+    grid-template-columns: 1fr;
+}
+
+/* Adaptación para notebooks y pantallas pequeñas */
+@media (max-width: 900px) {
+    #review-summary {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Issue #15 - Errores de validación */
+
+.field .input-invalid {
+    border: 2px solid var(--red) !important;
+    background: rgba(239, 68, 68, 0.07) !important;
+}
+
+.field .input-invalid:focus {
+    outline: 2px solid var(--red);
+    outline-offset: 2px;
+}
+.field-error {
+    display: block;
+    color: var(--red);
+    font-size: 11px;
+    margin-top: 4px;
+}
+
+.field-error:empty {
+    display: none;
+}
