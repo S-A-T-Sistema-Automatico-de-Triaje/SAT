@@ -5,14 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TriageAI — Triaje</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css?v=20261016">
+<link rel="stylesheet" href="css/styles.css">
 <style>
-/* Cabecera del paciente: nombre y DNI grandes */
-.ps-header{gap:14px}.ps-avatar{width:52px;height:52px;font-size:24px}
-.ps-name{font-size:23px;font-weight:700;line-height:1.2}
-.ps-dni{font-size:17px;margin-top:2px}.ps-dni b{font-family:var(--mono);font-weight:600;letter-spacing:.3px}
-.ps-dni.none{font-size:13px;color:var(--dim)}
-.ps-age{font-size:14px}.tag-anon{font-size:12px;vertical-align:middle}
 .form-body{padding:16px 20px;flex:1}
 .fs{margin-bottom:18px}.fs-label{font-size:12px;font-weight:600;color:var(--dim);margin-bottom:8px;display:flex;align-items:center;gap:8px}
 .fs-label::after{content:'';flex:1;height:1px;background:var(--border)}
@@ -23,23 +17,7 @@
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:8px}.mb{margin-bottom:8px}
 .v-warn{border-color:var(--amber)!important;background:rgba(245,158,11,.07)!important}.v-crit{border-color:var(--red)!important;background:rgba(239,68,68,.08)!important}
 .hint{font-size:11px;color:var(--muted);margin-top:8px;padding:6px 10px;border-radius:6px;background:rgba(167,139,250,.12)}
-/* Comorbilidades: sección desplegable */
-.cm-wrap{background:var(--surface2);border:1px solid var(--border);border-radius:9px;overflow:hidden}
-.cm-toggle{width:100%;display:flex;align-items:center;gap:8px;padding:10px 12px;background:none;border:none;color:var(--text);font:600 13px var(--sans);cursor:pointer;text-align:left}
-.cm-toggle:hover{background:var(--surface3)}
-.cm-title{flex:1}.cm-title small{font-weight:400;color:var(--muted);font-size:11px;margin-left:4px}
-.cm-count{min-width:20px;height:20px;border-radius:10px;background:var(--blue);color:#fff;font:700 11px var(--mono);display:inline-flex;align-items:center;justify-content:center;padding:0 6px}
-.cm-count[hidden]{display:none}
-.cm-caret{color:var(--muted);font-size:12px;transition:transform .15s}
-.cm-toggle[aria-expanded="true"] .cm-caret{transform:rotate(180deg)}
-.cm-summary{padding:0 12px 10px;font-size:12px;color:var(--muted);line-height:1.5}
-.cm-summary:empty{display:none}
-.cm-list{border-top:1px solid var(--border);padding:8px;display:grid;grid-template-columns:1fr 1fr;gap:4px;max-height:280px;overflow-y:auto}
-.cm-list[hidden]{display:none}
-.cm-item{display:flex;align-items:center;text-align:left;gap:8px;padding:7px 9px;border-radius:7px;font-size:12px;line-height:1.3;color:var(--text);cursor:pointer;border:1px solid transparent}
-.cm-item:hover{background:var(--surface3)}
-.cm-item.on{background:rgba(37,99,235,.14);border-color:rgba(37,99,235,.45)}
-.cm-item input{width:15px;height:15px;padding:0;margin:0;flex-shrink:0;accent-color:var(--blue)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}.chips label{cursor:pointer;display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;font-size:11px;background:var(--surface3);border:1px solid var(--border2);color:var(--muted)}
 .foot{padding:14px 20px;border-top:1px solid var(--border);position:sticky;bottom:0;background:var(--surface)}
 .foot .btn{width:100%}.foot .btn-clear{margin-top:6px;background:transparent;font-weight:500;font-size:12px;color:var(--muted)}
 .tc{background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--teal);border-radius:9px;padding:12px 16px;margin-bottom:12px}
@@ -55,33 +33,10 @@
 .verdict.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4)}.verdict.adj{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4)}
 .verdict.wait{background:var(--surface2);border-color:var(--border)}
 .ident{display:flex;gap:8px;margin-top:12px}.ident input{flex:1}
+.hist{margin-top:24px}.hist h3{font-size:13px;font-weight:600;color:var(--muted);margin-bottom:10px}
 .h-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;border:1px solid var(--border);margin-bottom:6px;cursor:pointer;background:var(--surface2)}
 .h-item:hover,.h-item.active{border-color:var(--blue)}.h-name{flex:1;font-size:13px;font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .h-st{font-size:11px;color:var(--muted);white-space:nowrap}.h-st.ok{color:var(--green)}.h-st.adj{color:var(--amber)}
-/* DNI / paciente conocido */
-.dni-hint{font-size:11px;margin-top:6px;padding:6px 10px;border-radius:6px;display:none;line-height:1.5}
-.dni-hint.show{display:block}
-.dni-hint.known{background:rgba(16,185,129,.12);color:var(--green);border:1px solid rgba(16,185,129,.35)}
-.dni-hint.new{background:var(--surface2);color:var(--muted);border:1px solid var(--border)}
-.dni-hint.bad{background:rgba(245,158,11,.1);color:var(--amber);border:1px solid rgba(245,158,11,.35)}
-.dni-hint small{display:block;color:var(--muted);margin-top:2px}
-.field input.af{border-color:rgba(16,185,129,.55);background:rgba(16,185,129,.07)}
-/* Barra superior del panel derecho: Inicio / Listado / Buscar */
-.toolbar{position:sticky;top:-20px;z-index:5;display:flex;gap:8px;align-items:center;margin:-20px -20px 16px;padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border)}
-.tb-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface3);color:var(--text);font:600 13px var(--sans);cursor:pointer;white-space:nowrap}
-.tb-btn:hover{border-color:var(--blue)}.tb-btn.on{background:var(--blue);border-color:var(--blue);color:#fff}
-.tb-search{position:relative;flex:1;min-width:140px}
-.tb-search input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 32px 9px 12px;font:13px var(--sans);color:var(--text)}
-.tb-search input:focus{border-color:var(--blue);outline:none}
-.tb-clear{position:absolute;right:8px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:18px;cursor:pointer;line-height:1}
-.tb-clear[hidden]{display:none}
-.list-head{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:12px}.list-head h3{font-size:15px;font-weight:700}
-.tabs{display:flex;gap:6px;margin-left:auto}
-.tab{padding:6px 12px;border-radius:20px;border:1px solid var(--border2);background:var(--surface2);color:var(--muted);font:600 12px var(--sans);cursor:pointer}
-.tab span{font-family:var(--mono);margin-left:4px;opacity:.8}
-.tab:hover{border-color:var(--blue)}.tab.on{background:rgba(37,99,235,.18);border-color:var(--blue);color:var(--text)}
-.list-note{font-size:11px;color:var(--dim);text-align:center;padding:8px}
-.s-hint{font-size:13px;color:var(--muted);padding:10px 2px}
 </style>
 </head>
 <body>
@@ -128,9 +83,6 @@
     <!-- ETAPA 1: Datos del paciente -->
     <div class="form-step" data-step="1">
     <div class="fs"><div class="fs-label">Identificación</div>
-      <div class="field mb"><label for="dni">DNI (opcional)</label>
-        <input id="dni" inputmode="numeric" autocomplete="off" maxlength="12" placeholder="Sin puntos. Si el paciente ya vino, se autocompletan sus datos" oninput="onDniInput()">
-        <div class="dni-hint" id="dni-hint" role="status"></div></div>
       <div class="g2 mb"><div class="field"><label for="nombre">Nombre</label><input id="nombre" oninput="updateHint()"></div>
         <div class="field"><label for="apellido">Apellido</label><input id="apellido" oninput="updateHint()"></div></div>
       <div class="g2"><div class="field"><label for="edad">Edad</label><input type="number" id="edad" min="0" max="130" placeholder="años"></div>
@@ -231,27 +183,12 @@
 </main>
 </div>
 
-<script src="js/common.js?v=20261016"></script>
+<script src="js/common.js"></script>
 <script>
 requireRole("triagista");
-// Compatibilidad: si js/common.js es una versión vieja, estas funciones no existen. Con la última versión de common.js no hacen falta.
-if (typeof formatDni !== "function") window.formatDni = d => String(d ?? "").replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-if (typeof fmtDate !== "function") window.fmtDate = iso => iso ? parseUTC(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
-if (typeof timeAgoLong !== "function") window.timeAgoLong = iso => {
-  if (!iso) return ""; const d = Math.floor((Date.now() - parseUTC(iso)) / 86400000);
-  if (d < 1) return "hoy"; if (d < 31) return `hace ${d} día${d !== 1 ? "s" : ""}`;
-  if (d < 365) { const m = Math.floor(d / 30); return `hace ${m} mes${m !== 1 ? "es" : ""}`; }
-  const y = Math.floor(d / 365); return `hace ${y} año${y !== 1 ? "s" : ""}`; };
-if (typeof renderPatientRecord !== "function") document.querySelector("header").insertAdjacentHTML("afterend",
-  '<div role="alert" style="background:rgba(239,68,68,.15);border-bottom:1px solid rgba(239,68,68,.4);color:var(--red);font-size:13px;padding:8px 24px">Falta actualizar <b>js/common.js</b> (es una versión vieja): hasta que lo reemplaces no funcionarán la ficha, el listado ni el historial del paciente.</div>');
-
 const $ = id => document.getElementById(id);
 let mine = [], selectedId = null, pickedEsi = null;
-// Navegación del panel derecho: home | list | search | record | case
-let view = "home", listTab = "patients", patients = null, lastSearch = null, recordData = null, recordOrigin = "form", lastCaseId = null, viewSeq = 0;
-let searchTimer = null;
-const HOME_HTML = '<div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.<br><small style="color:var(--dim)">O usá <b>Listado</b> o el buscador para ver pacientes registrados.</small></div>';
-const FIELDS = ["dni","nombre","apellido","edad","sexo","fc","pa_s","pa_d","spo2","fr","temp","motivo","sintomas","antecedentes","medicacion","alergias","pain_score","pain_location","mental_status_triage","gcs_total","weight_kg","height_cm","chief_complaint_system"];
+const FIELDS = ["nombre","apellido","edad","sexo","fc","pa_s","pa_d","spo2","fr","temp","motivo","sintomas","antecedentes","medicacion","alergias","pain_score","pain_location","mental_status_triage","gcs_total","weight_kg","height_cm","chief_complaint_system"];
 
 
 
@@ -458,7 +395,6 @@ document.querySelectorAll(".step-btn").forEach(button => {
 
 // ── Arranque ─────────────────────────────────────────────
 (async function init() {
-  showHome();
   try { await api("/api/health"); setStatus("ok", "Backend conectado"); } catch { setStatus("err", "Sin conexión con el backend"); }
   loadFormOptions(); loadMine(); setInterval(loadMine, 20000);
 })();
@@ -488,104 +424,20 @@ async function loadFormOptions() {
 
 // ── Formulario ───────────────────────────────────────────
 const isAnon = () => !$("nombre").value.trim() && !$("apellido").value.trim();
-function updateHint() {
-  const h = $("anon-hint");
-  h.style.display = isAnon() ? "block" : "none";
-  h.innerHTML = $("dni").value.trim()
-    ? "Sin nombre ni apellido, el caso se registra como <b>anónimo</b> y <b>el DNI no se guarda</b>. Completá el nombre para vincularlo al historial del paciente."
-    : "Sin nombre ni apellido, el caso se registra como <b>anónimo</b>. Podés identificarlo después.";
-}
 
-// ── DNI: búsqueda de paciente conocido y autocompletado ──
-const AUTOFILL = { nombre: "nombre", apellido: "apellido", edad: "edad", sexo: "sexo", weight_kg: "weight_kg", height_cm: "height_cm" };
-let dniTimer = null, dniSeq = 0, lastLookedUp = null;
-
-/** Completa los datos básicos del paciente en el formulario sin pisar lo que el triagista ya escribió. Devuelve los campos completados. */
-function applyAutofill(p) {
-  const filled = [];
-  for (const [key, id] of Object.entries(AUTOFILL)) {
-    const v = p[key], inp = $(id);
-    if (v !== null && v !== undefined && v !== "" && !inp.value.trim()) {
-      inp.value = v; inp.classList.add("af");
-      inp.addEventListener("input", () => inp.classList.remove("af"), { once: true });
-      filled.push(id);
-    }
-  }
-  return filled;
-}
-
-function dniHint(kind, html) {
-  const el = $("dni-hint");
-  el.className = "dni-hint" + (kind ? ` show ${kind}` : "");
-  el.innerHTML = html || "";
-}
-
-function onDniInput() {
-  updateHint();
-  clearTimeout(dniTimer);
-  const digits = $("dni").value.replace(/\D/g, "");
-  if (digits.length < 7) { lastLookedUp = null; dniHint(digits ? "bad" : "", digits ? "Ingresá el DNI completo (sin puntos)." : ""); return; }
-  dniTimer = setTimeout(() => lookupDni(digits), 450);   // espera a que termine de tipear
-}
-
-async function lookupDni(digits) {
-  if (digits === lastLookedUp) return;
-  const seq = ++dniSeq;
-  dniHint("new", "Buscando paciente...");
-  try {
-    const r = await api(`/api/patients/lookup?dni=${encodeURIComponent(digits)}`);
-    if (seq !== dniSeq) return;                // llegó tarde: el usuario ya cambió el DNI
-    lastLookedUp = digits;
-    if (!r.found) { dniHint("new", "Paciente nuevo: no hay visitas previas con este DNI."); return; }
-    const filled = applyAutofill(r.patient);
-    updateHint();
-    dniHint("known", `✓ Paciente conocido · ${r.visits} visita${r.visits !== 1 ? "s" : ""} previa${r.visits !== 1 ? "s" : ""} · última ${timeAgoLong(r.last_visit)}
-      <small>${filled.length ? "Datos autocompletados (en verde) de la última visita. " : ""}Verificá edad, peso y altura: pueden haber cambiado. El historial está a la derecha.</small>`);
-    openRecord(digits, "form");   // paciente ya registrado: se muestra su historial
-  } catch (e) {
-    if (seq !== dniSeq) return;
-    dniHint("bad", esc(e.message));
-  }
-}
-
-
-// ── Comorbilidades desplegables ──────────────────────────
-function toggleComorb(force) {
-  const list = $("comorbidities"), open = force !== undefined ? force : list.hidden;
-  list.hidden = !open; $("cm-toggle").setAttribute("aria-expanded", String(open));
-}
-function updateComorb() {
-  const all = [...document.querySelectorAll(".cm")], on = all.filter(c => c.checked);
-  all.forEach(c => c.closest(".cm-item").classList.toggle("on", c.checked));
-  $("cm-count").hidden = !on.length; $("cm-count").textContent = on.length;
-  $("cm-summary").textContent = on.map(c => c.dataset.label).join(" · ");   // resumen visible aunque esté cerrado
-}
+function updateHint() { $("anon-hint").style.display = isAnon() ? "block" : "none"; }
 
 function checkVitals() {
-  const ids = ["fc", "pa_s", "spo2", "temp"];
-  let hayCritico = false;
-
-  ids.forEach(id => {
-    const input = $(id);
-    const c = vitalClass(input.value, id);
-
-    input.classList.toggle("v-warn", c === "ps-vital-warn");
-    input.classList.toggle("v-crit", c === "ps-vital-crit");
-
-    if (c === "ps-vital-crit") {
-      hayCritico = true;
-    }
+  ["fc", "pa_s", "spo2", "temp"].forEach(id => {
+    const c = vitalClass($(id).value, id);
+    $(id).classList.toggle("v-warn", c === "ps-vital-warn"); $(id).classList.toggle("v-crit", c === "ps-vital-crit");
   });
-
-  $("btn-classify").disabled = hayCritico;
 }
-
 
 function getPatientData() {
   const pd = { anonimo: isAnon(), pain_unassessable: $("pain_unassessable").checked,
     comorbidities: [...document.querySelectorAll(".cm:checked")].map(c => c.value) };
   FIELDS.forEach(id => pd[id] = $(id).value.trim());
-  pd.dni = pd.dni.replace(/\D/g, "");   // el backend también normaliza; esto evita mandar "12.345.678"
   return pd;
 }
 
@@ -855,10 +707,8 @@ function enableEnterNavigation() {
 enableEnterNavigation();
 
 function resetForm() {
-  FIELDS.forEach(id => { $(id).value = ""; $(id).classList.remove("af"); });
+  FIELDS.forEach(id => $(id).value = "");
   $("pain_unassessable").checked = false; document.querySelectorAll(".cm").forEach(c => c.checked = false);
-  updateComorb(); toggleComorb(false);
-  clearTimeout(dniTimer); dniSeq++; lastLookedUp = null; dniHint("", "");
   $("form-msg").textContent = ""; checkVitals(); updateHint();
   document.querySelectorAll(".field-error").forEach(el => {
     el.textContent = "";
@@ -869,13 +719,78 @@ document.querySelectorAll(".input-invalid").forEach(el => {
     el.setCustomValidity("");
 });
 }
-function clearAll() { goHome(); }
+
+
+function clearAll() {
+    // Comprobar si existen datos cargados
+    const hasData =
+        FIELDS.some(id => $(id).value.trim() !== "") ||
+        $("pain_unassessable").checked ||
+        document.querySelectorAll(".cm:checked").length > 0;
+
+    if (classificationCompleted) {
+    resetForm();
+
+    selectedId = null;
+    pickedEsi = null;
+
+    $("review-summary").replaceChildren();
+    $("detail").innerHTML =
+        '<div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.</div>';
+
+    classificationCompleted = false;
+    updatePatientButton();
+
+    showStep(1);
+    renderMine();
+    $("nombre").focus();
+
+    return;
+}
+    // Pedir confirmación solamente si hay datos
+    if (hasData) {
+        const confirmed = window.confirm(
+            "¿Querés limpiar el formulario?\n\n" +
+            "Se perderán los datos que todavía no guardaste. " +
+            "Los casos registrados no se eliminarán."
+        );
+
+        if (!confirmed) return;
+    }
+
+    resetForm();
+
+    selectedId = null;
+    pickedEsi = null;
+
+    $("review-summary").replaceChildren();
+
+    $("detail").innerHTML =
+        '<div class="empty">Completá los datos del paciente y presioná <b>Clasificar</b>.</div>';
+
+    showStep(1);
+    renderMine();
+
+    $("nombre").focus();
+}
+
+
 
 // ── Clasificar ───────────────────────────────────────────
 async function classify() {
   const pd = getPatientData(), msg = $("form-msg"); msg.textContent = "";
-  if (!pd.motivo) { msg.textContent = "Completá el motivo de consulta."; $("motivo").focus(); return; }
-  if (pd.dni && (pd.dni.length < 6 || pd.dni.length > 10)) { msg.textContent = "El DNI debe tener entre 6 y 10 dígitos (o dejalo vacío)."; $("dni").focus(); return; }
+if (!validateNumericFields()) {
+    return;
+}
+if (!validateBloodPressure()) {
+    return;
+}
+if (!pd.motivo) {
+    showStep(1);
+    msg.textContent = "Completá el motivo de consulta.";
+    $("motivo").focus();
+    return;
+}
   const btn = $("btn-classify"); btn.disabled = true; btn.textContent = "Clasificando...";
   setStatus("warn", "Clasificando...");
   try {
@@ -915,20 +830,8 @@ setStatus(
 
 // ── Detalle de un caso ───────────────────────────────────
 async function openCase(id) {
-  const seq = ++viewSeq; selectedId = id; setView("case");
-  try { const d = await api(`/api/cases/${id}`); if (seq !== viewSeq) return; showCase(d); loadCaseHistory(d, seq); }
-  catch (e) { if (seq === viewSeq) $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
-}
-
-/** Historial del paciente debajo de sus datos (solo si el caso tiene DNI). */
-async function loadCaseHistory(d, seq) {
-  const dni = (d.case.patient_data || {}).dni; if (!dni) return;
-  try {
-    const r = await api(`/api/patients/record/${encodeURIComponent(dni)}`);
-    if (seq !== viewSeq || !$("hx-box")) return;
-    const me = getUser().username, prev = r.visits.filter(v => v.classification_id !== d.classification_id);
-    $("hx-box").innerHTML = historyPanel(prev, r.summary, dni, v => v.triagist === me);
-  } catch (e) { /* sin historial no se bloquea el caso */ }
+  selectedId = id; renderMine();
+  try { showCase(await api(`/api/cases/${id}`)); } catch (e) { $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
 }
 
 function showCase(d) {
@@ -936,25 +839,12 @@ function showCase(d) {
   pickedEsi = d.triagist.esi || d.model.esi;
   $("detail").innerHTML = `
     ${renderPatientSummary(c.patient_data, c.is_anonymous ? c.anon_code : null)}
-    <div id="hx-box"></div>
     ${renderESICard(d.model.esi, "Sugerido por el modelo")}
     ${r.confidence != null ? `<div class="meta">Confianza del modelo: ${(r.confidence * 100).toFixed(1)}%</div>` : ""}
     ${renderSections(r)}
     ${tr.length ? `<div class="tc"><div class="rs-title">Seguimiento sugerido</div>${tr.map(t => `<div>${esc(t.action)}<span class="pr">${esc(t.priority)}</span></div>`).join("")}</div>` : ""}
     ${d.status === "en_triaje" ? sendZone(d) : statusBox(d)}
-    ${c.is_anonymous ? `<div class="ident"><input class="inline-in" id="id-n" placeholder="Nombre" aria-label="Nombre"><input class="inline-in" id="id-a" placeholder="Apellido" aria-label="Apellido"><input class="inline-in" id="id-d" inputmode="numeric" placeholder="DNI (opcional)" aria-label="DNI" style="max-width:140px"><button class="btn" onclick="identify(${d.classification_id})">Identificar</button></div><div class="msg" id="id-msg"></div>`
-      : !(c.patient_data || {}).dni ? `<div class="ident"><input class="inline-in" id="dni-add" inputmode="numeric" placeholder="Sin DNI: cargalo para vincular su historial" aria-label="DNI"><button class="btn" onclick="addDni(${d.classification_id})">Guardar DNI</button></div><div class="msg" id="dni-msg"></div>` : ""}`;
-}
-
-// Cargar el DNI a un caso ya existente (pacientes anteriores a la función de historial)
-async function addDni(id) {
-  const dni = $("dni-add").value.replace(/\D/g, ""), msg = $("dni-msg"); msg.textContent = "";
-  if (dni.length < 6 || dni.length > 10) { msg.textContent = "El DNI debe tener entre 6 y 10 dígitos."; return; }
-  try {
-    const r = await api(`/api/patients/by-case/${id}/dni`, { method: "PATCH", body: { dni } });
-    await openCase(id);
-    setStatus("ok", r.previous_visits ? `DNI guardado: ${r.previous_visits} visita${r.previous_visits !== 1 ? "s" : ""} previa${r.previous_visits !== 1 ? "s" : ""} vinculada${r.previous_visits !== 1 ? "s" : ""}` : "DNI guardado");
-  } catch (e) { msg.textContent = e.message; }
+    ${c.is_anonymous ? `<div class="ident"><input class="inline-in" id="id-n" placeholder="Nombre" aria-label="Nombre"><input class="inline-in" id="id-a" placeholder="Apellido" aria-label="Apellido"><button class="btn" onclick="identify(${d.classification_id})">Identificar</button></div><div class="msg" id="id-msg"></div>` : ""}`;
 }
 
 function sendZone(d) {
@@ -981,128 +871,14 @@ async function sendToDoctor(id) {
 }
 
 async function identify(id) {
-  const n = $("id-n").value.trim(), a = $("id-a").value.trim(), dni = $("id-d").value.replace(/\D/g, "");
+  const n = $("id-n").value.trim(), a = $("id-a").value.trim();
   if (!n) { $("id-msg").textContent = "Falta el nombre."; return; }
-  if (dni && (dni.length < 6 || dni.length > 10)) { $("id-msg").textContent = "El DNI debe tener entre 6 y 10 dígitos (o dejalo vacío)."; return; }
-  try {
-    await api(`/api/cases/${id}/identify`, { method: "PATCH", body: { nombre: n, apellido: a } });
-    let dniErr = "";
-    if (dni) { try { await api(`/api/patients/by-case/${id}/dni`, { method: "PATCH", body: { dni } }); } catch (e) { dniErr = e.message; } }
-    await Promise.all([openCase(id), loadMine()]);
-    if (dniErr) setStatus("err", "Identificado, pero no se guardó el DNI: " + dniErr);
-  } catch (e) { $("id-msg").textContent = e.message; }
+  try { await api(`/api/cases/${id}/identify`, { method: "PATCH", body: { nombre: n, apellido: a } }); await Promise.all([openCase(id), loadMine()]); }
+  catch (e) { $("id-msg").textContent = e.message; }
 }
 
-// ── Navegación del panel derecho ─────────────────────────
-function setView(v) {
-  view = v;
-  $("tb-home").classList.toggle("on", v === "home");
-  $("tb-list").classList.toggle("on", v === "list");
-}
-function showHome() { viewSeq++; selectedId = null; recordData = null; setView("home"); $("detail").innerHTML = HOME_HTML; }
-
-/** Inicio: limpia el formulario y deja el panel derecho vacío (sin pacientes ni casos a la vista). */
-function goHome() {
-  resetForm(); $("pq").value = ""; $("pq-clear").hidden = true; lastSearch = null;
-  showHome(); setStatus("ok", "Inicio");
-}
-
-// Listado: todos los pacientes registrados, y "Mis casos" (los que cargó este triagista, con su estado)
-async function showList(tab) {
-  if (tab) listTab = tab;
-  const seq = ++viewSeq; selectedId = null; recordData = null; setView("list");
-  $("pq").value = ""; $("pq-clear").hidden = true;
-  $("detail").innerHTML = '<div class="empty">Cargando listado...</div>';
-  try {
-    const [pl, m] = await Promise.all([api("/api/patients/list"), api("/api/cases/mine")]);
-    if (seq !== viewSeq) return;
-    patients = pl; mine = m; renderList();
-  } catch (e) { if (seq === viewSeq) $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
-}
-function showListTab(t) { listTab = t; renderList(); }
-
-function renderList() {
-  const tab = (id, label, n) => `<button class="tab ${listTab === id ? "on" : ""}" onclick="showListTab('${id}')">${label}<span>${n}</span></button>`;
-  let body;
-  if (listTab === "patients") {
-    body = patients.results.length
-      ? patientRows(patients.results) + (patients.truncated ? `<div class="list-note">Mostrando los ${patients.results.length} más recientes de ${patients.total}. Usá el buscador para encontrar a los demás.</div>` : "")
-      : '<div class="empty">Todavía no hay pacientes con DNI registrado.</div>';
-  } else {
-    body = mine.length ? mine.map(mineRow).join("") : '<div class="empty">Todavía no cargaste casos.</div>';
-  }
-  $("detail").innerHTML = `<div class="list-head"><h3>Listado</h3><div class="tabs">${tab("patients", "Todos los pacientes", patients.total)}${tab("mine", "Mis casos", mine.length)}</div></div>${body}`;
-}
-
-function mineRow(c) {
-  const changed = c.status === "revisado" && c.esi_triagist && c.esi_final !== c.esi_triagist;
-  const st = { en_triaje: ["sin enviar", ""], pendiente_medico: ["esperando médico", ""], revisado: [changed ? `✎ cambió a ESI ${c.esi_final}` : "✓ confirmado", changed ? "adj" : "ok"] }[c.status];
-  return `<div class="h-item ${c.classification_id === selectedId ? "active" : ""}" onclick="openCase(${c.classification_id})">
-    ${esiBadge(c.esi_final || c.esi_triagist || c.esi_model)}<div class="h-name">${esc(c.display_name)}</div><span class="h-st ${st[1]}">${st[0]}</span></div>`;
-}
-
-// "Mis casos" se refresca solo; si está a la vista, se redibuja
-async function loadMine() {
-  try { mine = await api("/api/cases/mine"); if (view === "list" && patients) renderList(); }
-  catch (e) { setStatus("err", e.message); }
-}
-
-// Buscador (DNI o nombre)
-function onSearchInput() {
-  clearTimeout(searchTimer);
-  const q = $("pq").value.trim();
-  $("pq-clear").hidden = !q;
-  if (!q) { lastSearch = null; if (view === "search") showHome(); return; }
-  const numeric = /^[\d.\s]+$/.test(q), n = numeric ? q.replace(/\D/g, "").length : q.length;
-  if (n < 3) { viewSeq++; setView("search"); $("detail").innerHTML = `<div class="s-hint">Escribí al menos 3 ${numeric ? "dígitos del DNI" : "letras del nombre"}.</div>`; return; }
-  searchTimer = setTimeout(() => runSearch(q), 350);   // espera a que termine de tipear
-}
-function onSearchKey(e) {
-  if (e.key === "Escape") clearSearch();
-  if (e.key === "Enter" && lastSearch && lastSearch.res.results.length === 1) openRecord(lastSearch.res.results[0].dni);
-}
-function clearSearch() { $("pq").value = ""; onSearchInput(); }
-
-async function runSearch(q) {
-  const seq = ++viewSeq; selectedId = null; recordData = null; setView("search");
-  $("detail").innerHTML = '<div class="s-hint">Buscando...</div>';
-  try {
-    const res = await api(`/api/patients/search?q=${encodeURIComponent(q)}`);
-    if (seq !== viewSeq) return;               // llegó tarde: ya se escribió otra cosa o se abrió otra vista
-    lastSearch = { q, res }; renderSearch();
-  } catch (e) { if (seq === viewSeq) $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
-}
-function renderSearch() {
-  const { q, res } = lastSearch;
-  $("detail").innerHTML = `<div class="list-head"><h3>Resultados para “${esc(q)}”</h3></div>` + (res.results.length
-    ? patientRows(res.results) + (res.truncated ? '<div class="list-note">Mostrando los más recientes: afiná la búsqueda.</div>' : "")
-    : '<div class="empty">No hay pacientes con ese dato.<br><small style="color:var(--dim)">Solo se buscan pacientes con DNI registrado.</small></div>');
-}
-
-// Ficha del paciente: datos básicos, resumen clínico e informe de todas sus visitas
-async function openRecord(dni, origin) {
-  if (!dni) return;
-  origin = origin || ({ list: "list", search: "search", case: "case" }[view] || "form");
-  if (origin === "case") lastCaseId = selectedId;
-  const seq = ++viewSeq; selectedId = null; recordOrigin = origin; setView("record");
-  $("detail").innerHTML = '<div class="empty">Cargando ficha del paciente...</div>';
-  try {
-    const r = await api(`/api/patients/record/${encodeURIComponent(dni)}`);
-    if (seq !== viewSeq) return;
-    recordData = r;
-    const me = getUser().username;
-    const actions = (origin !== "form" ? '<button class="btn btn-sm" onclick="backFromRecord()">← Volver</button>' : "")
-      + `<button class="btn btn-sm btn-primary" onclick="useInForm('${esc(dni)}')">Nueva consulta con estos datos</button>`;
-    $("detail").innerHTML = renderPatientRecord(r, { actions, canOpen: v => v.triagist === me });   // solo puede abrir los casos que cargó él
-  } catch (e) { if (seq === viewSeq) $("detail").innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
-}
-
-function backFromRecord() {
-  if (recordOrigin === "list") { if (patients) { viewSeq++; setView("list"); renderList(); } else showList(); }
-  else if (recordOrigin === "search" && lastSearch) { viewSeq++; setView("search"); renderSearch(); }
-  else if (recordOrigin === "case" && lastCaseId) openCase(lastCaseId);
-  else showHome();
-}
+// ── Mis casos (persistente: viene del backend) ───────────
+async function loadMine() { try { mine = await api("/api/cases/mine"); renderMine(); } catch (e) { setStatus("err", e.message); } }
 
 function renderMine() {
 const counter = document.getElementById("cases-count");
