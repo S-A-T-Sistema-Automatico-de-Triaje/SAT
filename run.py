@@ -25,7 +25,7 @@ import urllib.request
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
-BACKEND_DIR = ROOT / "Backend"
+BACKEND_DIR = ROOT / "backend"
 FRONTEND_DIR = ROOT / "Frontend"
 
 BACKEND_PORT = 8000
