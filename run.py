@@ -3,13 +3,13 @@
 run.py — Lanzador de SAT / TriageAI
 
 Levanta el Backend (FastAPI + uvicorn, :8000) y el Frontend (http.server, :8080),
-espera a que el backend responda y abre el navegador en
-http://localhost:8080/index.html
+espera a que el backend responda e imprime el link
+http://localhost:8080/index.html para que lo abras vos en el navegador
+(no abre nada automáticamente).
 
 Uso (desde la raíz del proyecto, donde están Backend/ y Frontend/):
     python run.py              # arranque normal
     python run.py --reload     # backend con autorecarga (desarrollo)
-    python run.py --no-browser # no abrir el navegador
 
 Ctrl+C detiene ambos procesos.
 """
@@ -22,7 +22,6 @@ import subprocess
 import sys
 import time
 import urllib.request
-import webbrowser
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -85,7 +84,6 @@ def stop(proc: subprocess.Popen | None, name: str) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="Lanza Backend + Frontend de SAT")
     parser.add_argument("--reload", action="store_true", help="uvicorn con --reload")
-    parser.add_argument("--no-browser", action="store_true", help="no abrir el navegador")
     args = parser.parse_args()
 
     # ── Validaciones previas ──────────────────────────────────
@@ -122,7 +120,7 @@ def main() -> int:
             cwd=FRONTEND_DIR,
         )
 
-        # ── 3. Esperar al backend y abrir el navegador ────────
+        # ── 3. Esperar al backend e imprimir el link ────────
         print("⏳ Esperando a que el Backend esté listo (carga del modelo)...")
         if not wait_for_backend():
             if backend.poll() is not None:
@@ -131,10 +129,8 @@ def main() -> int:
                 print("✗ El Backend no respondió en 90 s.")
             return 1
 
-        print(f"\n✓ Todo listo → {FRONTEND_URL}")
+        print(f"\n✓ Todo listo. Abrí este link en tu navegador:\n\n    {FRONTEND_URL}\n")
         print("  (Ctrl+C para detener todo)\n")
-        if not args.no_browser:
-            webbrowser.open(FRONTEND_URL)
 
         # ── 4. Mantener vivo hasta Ctrl+C o caída de un proceso ─
         while True:

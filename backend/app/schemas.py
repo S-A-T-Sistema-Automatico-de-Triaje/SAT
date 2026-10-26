@@ -26,6 +26,7 @@ class ESIResult(BaseModel):
 class PatientData(BaseModel):
     anonimo: bool = False  # NUEVO: si es True no se guardan nombre ni apellido
 
+    dni: Optional[str] = ""  # opcional; se normaliza a solo dígitos. No se guarda en casos anónimos.
     nombre: Optional[str] = ""
     apellido: Optional[str] = ""
     edad: Optional[str] = ""
