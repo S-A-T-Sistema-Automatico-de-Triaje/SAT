@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import inspect, text
 
 from app.database import Base, engine, SessionLocal
 from app.config import settings
@@ -9,6 +10,7 @@ from app.routers import auth as auth_router
 from app.routers import classify as classify_router
 from app.routers import cases as cases_router
 from app.routers import meta as meta_router
+from app.routers import patients as patients_router
 
 app = FastAPI(
     title="TriageAI Backend",
@@ -28,6 +30,7 @@ app.include_router(auth_router.router)
 app.include_router(classify_router.router)
 app.include_router(cases_router.router)
 app.include_router(meta_router.router)
+app.include_router(patients_router.router)
 
 
 # Usuarios iniciales: se crean al arrancar si no existen (solo los que falten).
@@ -43,10 +46,22 @@ def _initial_users():
     ]
 
 
+def _migrate_add_dni():
+    """Migración mínima (sin Alembic): agrega cases.dni a bases existentes para no
+    tener que borrar triageai.db. En bases nuevas la crea create_all."""
+    cols = {c["name"] for c in inspect(engine).get_columns("cases")}
+    if "dni" not in cols:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE cases ADD COLUMN dni VARCHAR(20)"))
+            conn.execute(text("CREATE INDEX IF NOT EXISTS ix_cases_dni ON cases (dni)"))
+        print("ℹ️  Migración: columna cases.dni agregada.")
+
+
 @app.on_event("startup")
 def on_startup():
     # Crea las tablas si no existen (para algo más robusto, migrar a Alembic más adelante)
     Base.metadata.create_all(bind=engine)
+    _migrate_add_dni()
 
     db = SessionLocal()
     try:

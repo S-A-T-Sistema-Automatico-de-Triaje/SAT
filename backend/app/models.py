@@ -53,6 +53,10 @@ class Case(Base):
     prompt_sent = Column(String, nullable=True)
     created_at = Column(DateTime, default=dt.datetime.utcnow)
 
+    # -- Identificación (opcional): solo dígitos, sin puntos. Vincula visitas del mismo paciente.
+    #    Los casos anónimos nunca lo guardan.
+    dni = Column(String(20), nullable=True, index=True)
+
     # -- Anonimato --
     is_anonymous = Column(Boolean, default=False, nullable=False)
     anon_code = Column(String(32), nullable=True, index=True)  # ej. ANON-20261002-0007 (se conserva al identificar)
