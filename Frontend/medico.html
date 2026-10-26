@@ -5,8 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TriageAI — Vista del médico</title>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="css/styles.css?v=20261016">
 <style>
+/* Cabecera del paciente: nombre y DNI grandes */
+.ps-header{gap:14px}.ps-avatar{width:52px;height:52px;font-size:24px}
+.ps-name{font-size:23px;font-weight:700;line-height:1.2}
+.ps-dni{font-size:17px;margin-top:2px}.ps-dni b{font-family:var(--mono);font-weight:600;letter-spacing:.3px}
+.ps-dni.none{font-size:13px;color:var(--dim)}
+.ps-age{font-size:14px}.tag-anon{font-size:12px;vertical-align:middle}
 .q-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:8px;border:1px solid var(--border);margin:0 14px 6px;cursor:pointer;background:var(--surface2)}
 .q-item:hover,.q-item.active{border-color:var(--blue)}
 .q-item.urgent{border-left:3px solid var(--esi1-c)}
@@ -32,6 +38,35 @@
 .verdict.ok{background:rgba(16,185,129,.1);border-color:rgba(16,185,129,.4)}.verdict.adj{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.4)}
 .verdict b{display:block;margin-bottom:4px}
 @media(max-width:720px){.levels{grid-template-columns:1fr}}
+
+/* Buscador de pacientes */
+.search-box{position:relative;padding:12px 14px;border-bottom:1px solid var(--border)}
+.search-box input{width:100%;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:9px 32px 9px 12px;font:13px var(--sans);color:var(--text)}
+.search-box input:focus{border-color:var(--blue);outline:none}
+.search-clear{position:absolute;right:22px;top:50%;transform:translateY(-50%);background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;line-height:1}
+.search-clear:hover{color:var(--text)}
+.search-hint{font-size:11px;color:var(--dim);padding:8px 20px 0}
+
+
+/* Pestañas de la izquierda + lista de pacientes revisados */
+.q-tabs{display:flex;gap:6px;padding:10px 14px 4px}
+.q-tab{flex:1;padding:8px 10px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface3);color:var(--muted);font:600 13px var(--sans);cursor:pointer}
+.q-tab:hover{border-color:var(--blue)}.q-tab.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.q-tab small{font-weight:500;opacity:.85;margin-left:4px}
+.sort-bar{display:flex;align-items:center;gap:6px;padding:8px 20px;font-size:12px;color:var(--muted)}
+.sort-bar button{padding:3px 11px;border-radius:999px;border:1px solid var(--border2);background:var(--surface3);color:var(--muted);font:600 12px var(--sans);cursor:pointer}
+.sort-bar button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.sort-bar .cnt{margin-left:auto;color:var(--dim)}
+.rv-letter{font:700 11px var(--mono);color:var(--dim);padding:8px 20px 4px}
+.rv-row{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:8px;border:1px solid var(--border);margin:0 14px 6px;cursor:pointer;background:var(--surface2)}
+.rv-row:hover,.rv-row.active{border-color:var(--blue)}
+.rv-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rv-dni{font:600 13px var(--mono);color:var(--muted);white-space:nowrap}
+.rv-sep{font-size:11px;font-weight:600;color:var(--dim);padding:12px 20px 6px;border-top:1px solid var(--border);margin-top:8px}
+/* Barra de la derecha (Inicio / Comprimir fichas) */
+.d-bar{position:sticky;top:-20px;z-index:5;display:flex;gap:8px;align-items:center;margin:-20px -20px 16px;padding:12px 20px;background:var(--bg);border-bottom:1px solid var(--border)}
+.d-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 14px;border-radius:8px;border:1.5px solid var(--border2);background:var(--surface3);color:var(--text);font:600 13px var(--sans);cursor:pointer;white-space:nowrap}
+.d-btn:hover{border-color:var(--blue)}
 </style>
 </head>
 <body>
@@ -49,39 +84,67 @@
 <div class="layout">
   <aside class="panel-left">
     <div class="panel-head"><h2>Casos para revisar</h2><p>Los más graves aparecen primero</p></div>
-    <div class="q-tools">
-      <label><input type="checkbox" id="show-reviewed" onchange="loadQueue()"> Mostrar revisados</label>
-      <span id="q-count"></span>
+    <div class="search-box">
+      <input id="pq" type="search" inputmode="search" autocomplete="off" placeholder="Buscar paciente por DNI o nombre" aria-label="Buscar paciente por DNI o nombre" oninput="onSearchInput()" onkeydown="onSearchKey(event)">
+      <button class="search-clear" id="pq-clear" hidden onclick="clearSearch()" aria-label="Borrar búsqueda">×</button>
     </div>
-    <div id="queue"></div>
+    <div class="q-tabs">
+      <button class="q-tab on" id="tab-pend" onclick="setTab('pend')">Pendientes<small id="q-count"></small></button>
+      <button class="q-tab" id="tab-rev" onclick="setTab('rev')">Revisados</button>
+    </div>
+    <div id="search-pane" hidden></div>
+    <div id="queue-pane"><div id="queue"></div></div>
+    <div id="rev-pane" hidden>
+      <div class="sort-bar">Ordenar:
+        <button id="so-az" class="on" onclick="setSort('az')">A–Z</button>
+        <button id="so-dni" onclick="setSort('dni')">DNI</button>
+        <span class="cnt" id="rv-count"></span></div>
+      <div id="rev-list"></div>
+    </div>
   </aside>
-  <main class="panel-right" id="detail"><div class="empty">Elegí un caso de la cola para revisarlo.</div></main>
+  <main class="panel-right" id="detail"><div class="empty">Elegí un caso de la cola, un paciente revisado o buscá por DNI.</div></main>
 </div>
 
-<script src="js/common.js"></script>
+<script src="js/common.js?v=20261016"></script>
 <script>
 requireRole("medico_guardia");
-let queue = [], selectedId = null, seen = null, review = { agrees: null, esi: null };
+// Compatibilidad: si js/common.js es una versión vieja, estas funciones no existen. Con la última versión de common.js no hacen falta.
+if (typeof formatDni !== "function") window.formatDni = d => String(d ?? "").replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+if (typeof fmtDate !== "function") window.fmtDate = iso => iso ? parseUTC(iso).toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit", year: "numeric" }) : "";
+if (typeof timeAgoLong !== "function") window.timeAgoLong = iso => {
+  if (!iso) return ""; const d = Math.floor((Date.now() - parseUTC(iso)) / 86400000);
+  if (d < 1) return "hoy"; if (d < 31) return `hace ${d} día${d !== 1 ? "s" : ""}`;
+  if (d < 365) { const m = Math.floor(d / 30); return `hace ${m} mes${m !== 1 ? "es" : ""}`; }
+  const y = Math.floor(d / 365); return `hace ${y} año${y !== 1 ? "s" : ""}`; };
+
+const $ = id => document.getElementById(id);
+let queue = [], selectedId = null, recordDni = null, viewSeq = 0, curCase = null, seen = null, review = { agrees: null, esi: null };
+let results = [], resultsTruncated = false, searchTimer = null, searchSeq = 0;
+let tab = "pend", sortMode = "az", revData = null, revSeq = 0;
+const EMPTY_HTML = '<div class="empty">Elegí un caso de la cola, un paciente revisado o buscá por DNI.</div>';
+if (typeof renderPatientRecord !== "function") document.querySelector("header").insertAdjacentHTML("afterend",
+  '<div role="alert" style="background:rgba(239,68,68,.15);border-bottom:1px solid rgba(239,68,68,.4);color:var(--red);font-size:13px;padding:8px 24px">Falta actualizar <b>js/common.js</b> (es una versión vieja): hasta que lo reemplaces no funcionarán la ficha ni el historial del paciente.</div>');
 
 const prio = c => c.esi_triagist ?? c.esi_model;
 
+// ── Cola ─────────────────────────────────────────────────
 async function loadQueue() {
   try {
-    const rev = document.getElementById("show-reviewed").checked;
-    queue = await api(`/api/cases/queue?include_reviewed=${rev}`);
+    queue = await api(`/api/cases/queue?include_reviewed=false`);
     const pend = queue.filter(c => c.status === "pendiente_medico");
     // Aviso de casos graves nuevos (ESI 1-2) desde la última carga
     const ids = new Set(pend.map(c => c.classification_id));
     const fresh = seen ? pend.filter(c => !seen.has(c.classification_id) && prio(c) <= 2) : [];
     seen = ids;
     setStatus(fresh.length ? "warn" : "ok", fresh.length ? `Nuevo caso ESI ${prio(fresh[0])}: ${fresh[0].display_name}` : `${pend.length} pendiente${pend.length !== 1 ? "s" : ""}`);
-    document.getElementById("q-count").textContent = `${pend.length} pendientes`;
+    $("q-count").textContent = pend.length ? `(${pend.length})` : "";
     renderQueue();
+    if (tab === "rev") loadReviewed(true);       // refresca también la lista de revisados (sin parpadeo)
   } catch (e) { setStatus("err", e.message); }
 }
 
 function renderQueue() {
-  const el = document.getElementById("queue");
+  const el = $("queue");
   if (!queue.length) { el.innerHTML = '<div class="empty">No hay casos pendientes.</div>'; return; }
   el.innerHTML = queue.map(c => {
     const done = c.status === "revisado";
@@ -93,12 +156,145 @@ function renderQueue() {
   }).join("");
 }
 
+// ── Buscador de pacientes (DNI o nombre) ─────────────────
+function showQueuePane(show) {
+  $("queue-pane").hidden = !show || tab !== "pend";
+  $("rev-pane").hidden = !show || tab !== "rev";
+  $("search-pane").hidden = show;
+}
+
+// ── Pestañas: Pendientes / Revisados ─────────────────────
+function setTab(t) {
+  tab = t;
+  $("tab-pend").classList.toggle("on", t === "pend"); $("tab-rev").classList.toggle("on", t === "rev");
+  if ($("pq").value) { $("pq").value = ""; $("pq-clear").hidden = true; searchSeq++; results = []; }
+  showQueuePane(true);
+  if (t === "rev") loadReviewed(); else loadQueue();
+}
+function setSort(m) { sortMode = m; $("so-az").classList.toggle("on", m === "az"); $("so-dni").classList.toggle("on", m === "dni"); renderReviewed(); }
+
+async function loadReviewed(silent) {
+  const seq = ++revSeq, el = $("rev-list");
+  if (!silent || !revData) el.innerHTML = '<div class="search-hint">Cargando pacientes revisados...</div>';
+  try {
+    const r = await api("/api/patients/reviewed");
+    if (seq !== revSeq) return;
+    revData = r; renderReviewed();
+  } catch (e) { if (seq === revSeq) el.innerHTML = `<div class="search-hint" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+const sortKey = s => String(s || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();   // "Álvarez" ordena como "Alvarez"
+const revName = r => [r.apellido, r.nombre].filter(Boolean).join(", ") || "Sin nombre registrado";
+
+function renderReviewed() {
+  const el = $("rev-list"); if (!revData) return;
+  const list = [...revData.results];
+  if (sortMode === "dni") list.sort((a, b) => Number(a.dni) - Number(b.dni));
+  else list.sort((a, b) => sortKey(a.apellido).localeCompare(sortKey(b.apellido)) || sortKey(a.nombre).localeCompare(sortKey(b.nombre)) || Number(a.dni) - Number(b.dni));
+  $("rv-count").textContent = `${list.length} paciente${list.length !== 1 ? "s" : ""}`;
+  let html = "", last = "";
+  for (const r of list) {
+    if (sortMode === "az") {
+      const l = (sortKey(r.apellido || r.nombre).charAt(0) || "#").toUpperCase();
+      if (l !== last) { html += `<div class="rv-letter">${esc(l)}</div>`; last = l; }
+    }
+    html += `<div class="rv-row ${r.dni === recordDni ? "active" : ""}" onclick="openRecord('${esc(r.dni)}')">
+      <div class="rv-name">${esc(revName(r))}</div><div class="rv-dni">${esc(formatDni(r.dni))}</div></div>`;
+  }
+  if (!list.length) html = '<div class="empty">Todavía no hay pacientes revisados.</div>';
+  const nd = revData.no_dni;
+  if (nd.length) {
+    html += `<div class="rv-sep">Sin DNI (${nd.length}) · no se pueden agrupar</div>` + nd.map(c =>
+      `<div class="rv-row ${c.classification_id === selectedId ? "active" : ""}" onclick="openCase(${c.classification_id})">
+        <div class="rv-name">${esc(c.label)}</div><div class="rv-dni">${esc(fmtDate(c.date))}</div></div>`).join("");
+  }
+  el.innerHTML = html;
+}
+
+// ── Barra de la derecha: Inicio y Comprimir fichas ───────
+function detailBar() {
+  return `<div class="d-bar"><button class="d-btn" onclick="goInicio()">⌂ Inicio</button>
+    <button class="d-btn" id="btn-fold" onclick="toggleFolds()">Comprimir fichas</button></div>`;
+}
+function toggleFolds() {
+  const ds = [...document.querySelectorAll("#detail details.vx")];
+  const anyOpen = ds.some(d => d.open);
+  ds.forEach(d => { d.open = !anyOpen; });
+  updateFoldBtn();
+}
+function updateFoldBtn() {
+  const b = $("btn-fold"); if (!b) return;
+  const ds = [...document.querySelectorAll("#detail details.vx")];
+  b.hidden = !ds.length;
+  b.textContent = ds.some(d => d.open) ? "Comprimir fichas" : "Expandir fichas";
+}
+document.addEventListener("toggle", e => { if (e.target.classList && e.target.classList.contains("vx")) updateFoldBtn(); }, true);
+
+function goInicio() {
+  viewSeq++; selectedId = null; recordDni = null; curCase = null;
+  clearSearch(); setTab("pend");
+  $("detail").innerHTML = EMPTY_HTML; renderQueue();
+}
+
+function onSearchInput() {
+  clearTimeout(searchTimer);
+  const q = $("pq").value.trim();
+  $("pq-clear").hidden = !q;
+  if (!q) { searchSeq++; results = []; showQueuePane(true); return; }
+  showQueuePane(false);
+  const numeric = /^[\d.\s]+$/.test(q), n = numeric ? q.replace(/\D/g, "").length : q.length;
+  if (n < 3) { searchSeq++; $("search-pane").innerHTML = `<div class="search-hint">Escribí al menos 3 ${numeric ? "dígitos del DNI" : "letras del nombre"}.</div>`; return; }
+  searchTimer = setTimeout(() => runSearch(q), 350);   // espera a que termine de tipear
+}
+
+function onSearchKey(e) {
+  if (e.key === "Escape") clearSearch();
+  if (e.key === "Enter" && results.length === 1) openRecord(results[0].dni);   // un solo resultado: abrirlo directo
+}
+
+function clearSearch() { $("pq").value = ""; onSearchInput(); }
+
+async function runSearch(q) {
+  const seq = ++searchSeq, pane = $("search-pane");
+  pane.innerHTML = '<div class="search-hint">Buscando...</div>';
+  try {
+    const r = await api(`/api/patients/search?q=${encodeURIComponent(q)}`);
+    if (seq !== searchSeq) return;                 // llegó tarde: ya se escribió otra cosa
+    results = r.results; resultsTruncated = r.truncated; renderResults();
+  } catch (e) { if (seq === searchSeq) pane.innerHTML = `<div class="search-hint" style="color:var(--red)">${esc(e.message)}</div>`; }
+}
+
+function renderResults() {
+  const pane = $("search-pane");
+  if (!results.length) { pane.innerHTML = '<div class="empty">No hay pacientes con ese dato.<br><small style="color:var(--dim)">Solo se buscan pacientes con DNI registrado.</small></div>'; return; }
+  pane.innerHTML = `<div class="search-hint" style="padding-bottom:8px">${results.length} paciente${results.length !== 1 ? "s" : ""}${resultsTruncated ? " (mostrando los más recientes: afiná la búsqueda)" : ""}</div>
+    <div style="padding:0 14px">${patientRows(results, recordDni)}</div>`;
+}
+
+// ── Ficha del paciente (vista completa por DNI) ──────────
+async function openRecord(dni) {
+  if (!dni) { setStatus("err", "Este caso no tiene DNI: no hay ficha para abrir"); return; }
+  const seq = ++viewSeq; selectedId = null; recordDni = dni; curCase = null; renderQueue(); renderReviewed();
+  if (results.length) renderResults();
+  const box = $("detail"); box.innerHTML = '<div class="empty">Cargando ficha del paciente...</div>';
+  try {
+    const r = await api(`/api/patients/record/${encodeURIComponent(dni)}`);
+    if (seq !== viewSeq) return;
+    box.innerHTML = detailBar() + renderPatientRecord(r); updateFoldBtn();
+  } catch (e) { if (seq === viewSeq) box.innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
+}
+
+// ── Caso en revisión ─────────────────────────────────────
 async function openCase(id) {
-  selectedId = id; review = { agrees: null, esi: null }; renderQueue();
-  const box = document.getElementById("detail");
+  const seq = ++viewSeq; selectedId = id; recordDni = null; review = { agrees: null, esi: null }; renderQueue(); renderReviewed();
+  if (results.length) renderResults();
+  const box = $("detail");
   box.innerHTML = '<div class="empty">Cargando caso...</div>';
-  try { renderDetail(await api(`/api/cases/${id}`)); }
-  catch (e) { box.innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
+  try {
+    const d = await api(`/api/cases/${id}`);
+    if (seq !== viewSeq) return;                   // el médico ya abrió otra cosa
+    curCase = d; renderDetail(d); loadHistory(id, seq);
+  } catch (e) { if (seq === viewSeq) box.innerHTML = `<div class="err-box">${esc(e.message)}</div>`; }
 }
 
 function renderDetail(d) {
@@ -110,11 +306,40 @@ function renderDetail(d) {
       ${t.note ? `<div class="note">${esc(t.note)}</div>` : ""}</div>
     <div class="level"><div class="who">Médico</div><div class="row">${esiBadge(dr.esi, "lg")}<small>${dr.esi ? "" : "sin revisar"}</small></div></div></div>`;
 
-  document.getElementById("detail").innerHTML = `
+  $("detail").innerHTML = `${detailBar()}
     ${renderPatientSummary(d.case.patient_data, d.case.anon_code)}
+    <div id="hx-box"></div>
     ${levels}
     ${renderSections(m.result)}
     ${pending ? reviewForm(d) : verdictBox(d)}`;
+}
+
+// Historial del paciente dentro del caso (por DNI)
+async function loadHistory(id, seq) {
+  const box = $("hx-box"); if (!box) return;
+  box.innerHTML = '<div class="pr-note">Buscando historial del paciente...</div>';
+  try {
+    const h = await api(`/api/patients/by-case/${id}/history`);
+    if (seq !== viewSeq) return;
+    const el = $("hx-box"); if (el) { el.innerHTML = renderHistoryPanel(h, id); updateFoldBtn(); }
+  } catch (e) { const el = $("hx-box"); if (el && seq === viewSeq) el.innerHTML = `<div class="pr-note">No se pudo cargar el historial: ${esc(e.message)}</div>`; }
+}
+
+function renderHistoryPanel(h, id) {
+  if (!h.has_dni) {
+    const anon = curCase && curCase.case.is_anonymous;
+    return `<div class="pr-note">Este caso <b>no tiene DNI</b>, por eso no se puede buscar su historial.${anon ? " Es un caso anónimo: primero hay que identificar al paciente." : `
+      <div class="row"><input id="dni-add" inputmode="numeric" placeholder="Cargar DNI (solo números)" aria-label="DNI" onkeydown="if(event.key==='Enter')addDni(${id})"><button class="btn btn-sm" onclick="addDni(${id})">Guardar DNI</button></div><div class="msg" id="dni-msg"></div>`}</div>`;
+  }
+  const dni = h.dni || (h.patient && h.patient.dni) || "";   // por si el backend no manda "dni" arriba de todo
+  return historyPanel(h.visits, h.summary, dni);
+}
+
+async function addDni(id) {
+  const dni = $("dni-add").value.replace(/\D/g, ""), msg = $("dni-msg"); msg.textContent = "";
+  if (dni.length < 6 || dni.length > 10) { msg.textContent = "El DNI debe tener entre 6 y 10 dígitos."; return; }
+  try { await api(`/api/patients/by-case/${id}/dni`, { method: "PATCH", body: { dni } }); await openCase(id); }
+  catch (e) { msg.textContent = e.message; }
 }
 
 function verdictBox(d) {
@@ -139,23 +364,23 @@ function reviewForm(d) {
 
 function pickAgree(a) {
   review.agrees = a; if (a) review.esi = null;
-  document.getElementById("b-agree").classList.toggle("sel", a);
-  document.getElementById("b-change").classList.toggle("sel", !a);
-  document.getElementById("picker").classList.toggle("open", !a);
-  [1, 2, 3, 4, 5].forEach(n => document.getElementById("ep" + n)?.classList.remove("sel"));
+  $("b-agree").classList.toggle("sel", a);
+  $("b-change").classList.toggle("sel", !a);
+  $("picker").classList.toggle("open", !a);
+  [1, 2, 3, 4, 5].forEach(n => $("ep" + n)?.classList.remove("sel"));
 }
 function pickESI(n) {
   review.esi = n;
-  [1, 2, 3, 4, 5].forEach(i => document.getElementById("ep" + i).classList.toggle("sel", i === n));
+  [1, 2, 3, 4, 5].forEach(i => $("ep" + i).classList.toggle("sel", i === n));
 }
 
 async function sendReview(id, proposedEsi) {
-  const msg = document.getElementById("msg"), comment = document.getElementById("comment").value.trim();
+  const msg = $("msg"), comment = $("comment").value.trim();
   msg.textContent = "";
   if (review.agrees === null) { msg.textContent = "Indicá si estás de acuerdo o querés cambiar el nivel."; return; }
   if (!review.agrees && !review.esi) { msg.textContent = "Elegí el nivel ESI correcto."; return; }
   if (!review.agrees && !comment) { msg.textContent = "Explicá en las recomendaciones por qué cambiás el nivel."; return; }
-  const btn = document.getElementById("btn-send"); btn.disabled = true;
+  const btn = $("btn-send"); btn.disabled = true;
   try {
     await api(`/api/cases/${id}/review`, { method: "POST", body: { agrees: review.agrees, esi_final: review.agrees ? proposedEsi : review.esi, comment } });
     await Promise.all([openCase(id), loadQueue()]);

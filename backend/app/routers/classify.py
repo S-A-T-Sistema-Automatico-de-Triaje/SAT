@@ -10,6 +10,7 @@ from app.prompts import build_prompt_from_form  # solo registro/trazabilidad
 from app.ml.model import classify_features
 from app.ml.narrative import build_narrative
 from app.security import require_roles
+from app.routers.patients import normalize_dni
 
 router = APIRouter(prefix="/api", tags=["classify"])
 
@@ -40,15 +41,22 @@ async def classify(
 
     pd = payload.patient_data
 
-    # Anónimo: se borra cualquier nombre ANTES de armar el prompt y el snapshot
+    # DNI opcional: se guarda solo con dígitos. Si viene y es inválido, se avisa en vez de descartarlo en silencio.
+    dni = normalize_dni(pd.dni)
+    if dni and not (6 <= len(dni) <= 10):
+        raise HTTPException(400, "El DNI debe tener entre 6 y 10 dígitos")
+
+    # Anónimo: se borra cualquier nombre (y DNI) ANTES de armar el prompt y el snapshot
     anon_code = None
     if pd.anonimo:
         pd.nombre = pd.apellido = ""
+        dni = None
         anon_code = _next_anon_code(db)
         label = anon_code
     else:
         full_name = f"{pd.nombre} {pd.apellido}".strip()
         label = full_name or pd.motivo[:45]
+    pd.dni = dni or ""
 
     prompt_record = build_prompt_from_form(pd)
 
@@ -60,6 +68,7 @@ async def classify(
         prompt_sent=prompt_record,
         is_anonymous=pd.anonimo,
         anon_code=anon_code,
+        dni=dni,
     )
     db.add(case)
     db.commit()
