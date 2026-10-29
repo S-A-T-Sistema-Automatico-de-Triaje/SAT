@@ -6,6 +6,19 @@
 **Estado:** En desarrollo
 **Repositorio:** S-A-T-Sistema-Automatico-de-Triaje/SAT
 
+
+## Índice
+
+1. [Introducción](#1-introducción)
+2. [Objetivo de la documentación](#2-objetivo-de-la-documentación)
+3. [Arquitectura general](#3-arquitectura-general)
+4. [Flujo de clasificación y revisión médica](#4-flujo-de-clasificación-y-revisión-médica)
+5. [Arquitectura del Backend](#5-arquitectura-del-backend)
+6. [Arquitectura del Frontend](#6-arquitectura-del-frontend)
+7. [Arquitectura del modelo de Machine Learning](#7-arquitectura-del-modelo-de-machine-learning)
+8. [Modelo de datos y persistencia](#8-modelo-de-datos-y-persistencia)
+
+
 ## 1. Introducción
 
 El Sistema Automático de Triaje (SAT) es una aplicación de apoyo a la clasificación inicial de pacientes, basada en la escala Emergency Severity Index (ESI), que establece cinco niveles de prioridad.
@@ -67,6 +80,8 @@ El sistema distingue entre tres decisiones:
 Estas decisiones se almacenan para mantener la trazabilidad del proceso de clasificación.
 
 El resultado del modelo constituye una recomendación de apoyo y no reemplaza la evaluación clínica profesional.
+
+### 3.4 Diagrama general de arquitectura
 
 ```mermaid
 flowchart TD
@@ -314,6 +329,8 @@ La arquitectura actual presenta algunas características relevantes:
 - La base de datos SQLite es adecuada para desarrollo y pruebas locales; un despliegue con múltiples puestos concurrentes requeriría evaluar una solución de persistencia apropiada.
 - Las validaciones del frontend no reemplazan la validación del backend ni las reglas clínicas.
 - Las credenciales iniciales de desarrollo y las claves configuradas por defecto deben reemplazarse antes de cualquier uso real.
+
+### 5.11 Diagrama de módulos del Backend
 
 ```mermaid
 
@@ -752,7 +769,7 @@ La arquitectura permite registrar diferencias entre la sugerencia automática y 
 
 ### 7.11 Diagrama del proceso de inferencia
 
-```mermaid id="5az93c"
+```mermaid
 flowchart TD
     A["Formulario del triagista"]
     B["POST /api/classify"]
@@ -931,7 +948,7 @@ La eventual migración a otro motor, como PostgreSQL, debe tratarse como una dec
 
 ### 8.8 Diagrama entidad-relación
 
-```mermaid id="6fbntr"
+```mermaid
 erDiagram
     USERS {
         int id PK
