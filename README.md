@@ -241,6 +241,7 @@ Ve el veredicto         ◄──    estado: revisado          ◄──  Deja r
 - [ ] Capturar los campos administrativos hoy diferidos (modo de llegada, cobertura, visitas previas) cuando exista el módulo de admisión
 - [ ] Incorporar señal del texto libre del motivo de consulta al modelo (vectorización) para mejorar el accuracy
 - [ ] Migraciones de base de datos con Alembic
+- [ ] Reduccion de informacion en pantalla
 
 ## Seguridad y privacidad
 
